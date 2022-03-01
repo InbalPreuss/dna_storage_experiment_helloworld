@@ -1,9 +1,12 @@
 config = {
     'payload_pos': [60, 100, 140, 180],
+    'amount_of_bc': 167,
     'design_len': 220,
     'payload_len': 20,
     'universal_len': 20,
     'barcode_len': 20,
+    'subset_size': 5,
+    'amount_of_payloads': 16,
     'input_file': "D:\\Downloads\\merged_robot_two_BCs\\merged_robot_two_BCs.fastq",
     'const_design_file': "D:\\Downloads\\merged_robot_two_BCs\\design.csv",
     'barcodes_design_file': "D:\\Downloads\\merged_robot_two_BCs\\barcodes_design.csv",
