@@ -2,7 +2,6 @@ from dna_storage_experiment.analyze_sequencing_data.analyze_fastq import Analyze
 from dna_storage_experiment.analyze_sequencing_data.config import config_analyze
 
 if __name__ == '__main__':
-    # produce_seqs_bar_ilan_run()
 
     # Analyze fastq results from sequencing
     config = config_analyze.build_config()
