@@ -59,8 +59,11 @@ def build_config():
         'foreach_bc_payload_count_file': "output/csv/foreach_bc_payload_count.csv",
         'compare_design_to_experiment_results_output_file': "output/csv/compare_design_to_experiment_results.csv",
         'output_hist_folder': "output/graphs/hist/",
+        'output_folder': "output/",
         'len_reads_hist_output_file': "output/graphs/hist/len_reads_hist.png",
         'output_graphs_folder': 'output/graphs/',
+        'output_line_graphs_folder': 'output/graphs/line_graphs/',
+        'sampling_rate_from_good_reads_graph': 'output/graphs/line_graphs/sampling_rate_from_good_reads_graph',
         'output_heatmap_folder': 'output/graphs/heatmap/',
         'heatmap_foreach_bc_and_x_count_with_most_common_file':
             "output/graphs/heatmap/heatmap_foreach_bc_and_x_count_with_most_common.png",

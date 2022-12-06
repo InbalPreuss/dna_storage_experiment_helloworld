@@ -21,6 +21,7 @@ if __name__ == '__main__':
                                           count_reads_for_each_bc_file=config['count_reads_for_each_bc_file'],
                                           missing_bcs_file=config['missing_bcs_file'],
                                           output_hist_folder=config['output_hist_folder'],
+                                          output_folder=config['output_folder'],
                                           output_graphs_folder=config['output_graphs_folder'],
                                           output_csv_folder=config['output_csv_folder'],
                                           output_heatmap_folder=config['output_heatmap_folder'],
@@ -37,6 +38,8 @@ if __name__ == '__main__':
                                           amount_of_payloads=config['amount_of_payloads'],
                                           z_to_k_mer_representative=config['z_to_k_mer_representative'],
                                           k_mer_representative_to_z=config['k_mer_representative_to_z'],
-                                          payload_pos=config['payload_pos']
+                                          payload_pos=config['payload_pos'],
+                                          sampling_rate_from_good_reads_graph=config['sampling_rate_from_good_reads_graph'],
+                                          output_line_graphs_folder=config['output_line_graphs_folder']
                                           )
     analyze_fastq_data.run()

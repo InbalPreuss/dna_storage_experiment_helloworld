@@ -48,6 +48,7 @@ class AnalyzeFastqData:
                  count_reads_for_each_bc_file: Union[Path, str],
                  missing_bcs_file: Union[Path, str],
                  output_hist_folder: Union[Path, str],
+                 output_folder: Union[Path, str],
                  output_graphs_folder: Union[Path, str],
                  output_csv_folder: Union[Path, str],
                  output_heatmap_folder: Union[Path, str],
@@ -62,7 +63,9 @@ class AnalyzeFastqData:
                  amount_of_payloads: int,
                  z_to_k_mer_representative: Dict,
                  k_mer_representative_to_z: Dict,
-                 payload_pos: List
+                 payload_pos: List,
+                 sampling_rate_from_good_reads_graph: Union[Path, str],
+                 output_line_graphs_folder: Union[Path, str]
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -78,6 +81,7 @@ class AnalyzeFastqData:
         self.count_reads_for_each_bc_file = count_reads_for_each_bc_file
         self.missing_bcs_file = missing_bcs_file
         self.output_hist_folder = output_hist_folder
+        self.output_folder = output_folder
         self.output_csv_folder = output_csv_folder
         self.output_graphs_folder = output_graphs_folder
         self.output_heatmap_folder = output_heatmap_folder
@@ -93,6 +97,8 @@ class AnalyzeFastqData:
         self.z_to_k_mer_representative = z_to_k_mer_representative
         self.k_mer_representative_to_z = k_mer_representative_to_z
         self.payload_pos = payload_pos
+        self.sampling_rate_from_good_reads_graph = sampling_rate_from_good_reads_graph
+        self.output_line_graphs_folder = output_line_graphs_folder
 
     # Verify universal
 
@@ -307,35 +313,8 @@ class AnalyzeFastqData:
                              count_all_z_mm]]
                     np.savetxt(f, cols, fmt='%s', delimiter=",")
 
-    def heatmap_foreach_bc_and_x_count_with_most_common(self) -> None:
-        df = pd.read_csv(self.foreach_bc_payload_count_file)
-        dict_foreach_bc_and_x_count_str = df.to_dict("list")
-
-        dict_foreach_bc_and_x_count_split_to_cycles = {}
-        dict_foreach_bc_and_x_count_all_cycles = {}
-        for bc_i_str, payloads in dict_foreach_bc_and_x_count_str.items():
-            dict_foreach_bc_and_x_count_all_cycles[bc_i_str] = {}
-            dict_foreach_bc_and_x_count_split_to_cycles[bc_i_str] = ast.literal_eval(
-                dict_foreach_bc_and_x_count_str[bc_i_str][0])
-
-            cycle_idx = 1
-            for cycle_name, cycle_data in dict_foreach_bc_and_x_count_split_to_cycles[bc_i_str].items():
-                cycle_data_new = cycle_data
-                if cycle_name != 'c1':
-                    cycle_idx += 1
-                    cycle_data_new = {}
-                    for payload_idx, payload_count in cycle_data.items():
-                        if payload_idx == 0:
-                            continue
-                        payload_new_x = (self.amount_of_payloads * (cycle_idx - 1)) + payload_idx
-                        cycle_data_new[payload_new_x] = payload_count
-
-                dict_foreach_bc_and_x_count_all_cycles[bc_i_str].update(cycle_data_new)
-
-        fig, ax = plt.subplots(figsize=(10, 7))
-
-        # make the matrix bcs x payloads
-        dict_foreach_bc_and_x_count_all_cycles_matrix = pd.DataFrame(dict_foreach_bc_and_x_count_all_cycles).T.fillna(0)
+    def create_heatmap_with_rectangles_on_most_common(self, dict_foreach_bc_and_x_count_all_cycles_matrix: Dict,
+                                                      ax) -> None:
 
         # remove col 0 and row 0
         del dict_foreach_bc_and_x_count_all_cycles_matrix[0]
@@ -381,6 +360,39 @@ class AnalyzeFastqData:
         plt.savefig(self.heatmap_foreach_bc_and_x_count_with_most_common_file, dpi=400)
         plt.close()
 
+    def heatmap_foreach_bc_and_x_count_with_most_common(self) -> None:
+        df = pd.read_csv(self.foreach_bc_payload_count_file)
+        dict_foreach_bc_and_x_count_str = df.to_dict("list")
+
+        dict_foreach_bc_and_x_count_split_to_cycles = {}
+        dict_foreach_bc_and_x_count_all_cycles = {}
+        for bc_i_str, payloads in dict_foreach_bc_and_x_count_str.items():
+            dict_foreach_bc_and_x_count_all_cycles[bc_i_str] = {}
+            dict_foreach_bc_and_x_count_split_to_cycles[bc_i_str] = ast.literal_eval(
+                dict_foreach_bc_and_x_count_str[bc_i_str][0])
+
+            cycle_idx = 1
+            for cycle_name, cycle_data in dict_foreach_bc_and_x_count_split_to_cycles[bc_i_str].items():
+                cycle_data_new = cycle_data
+                if cycle_name != 'c1':
+                    cycle_idx += 1
+                    cycle_data_new = {}
+                    for payload_idx, payload_count in cycle_data.items():
+                        if payload_idx == 0:
+                            continue
+                        payload_new_x = (self.amount_of_payloads * (cycle_idx - 1)) + payload_idx
+                        cycle_data_new[payload_new_x] = payload_count
+
+                dict_foreach_bc_and_x_count_all_cycles[bc_i_str].update(cycle_data_new)
+
+        fig, ax = plt.subplots(figsize=(10, 7))
+
+        # make the matrix bcs x payloads
+        dict_foreach_bc_and_x_count_all_cycles_matrix = pd.DataFrame(dict_foreach_bc_and_x_count_all_cycles).T.fillna(0)
+
+        self.create_heatmap_with_rectangles_on_most_common(dict_foreach_bc_and_x_count_all_cycles_matrix=
+                                                           dict_foreach_bc_and_x_count_all_cycles_matrix, ax=ax)
+
     def find_most_common(self) -> None:
         dict_bc = self.analyze_results_good_reads()
         self.most_common_for_each_bc(dict_bc=dict_bc)
@@ -392,6 +404,36 @@ class AnalyzeFastqData:
     def missing_bc_to_csv(self, dict_append_missing_bc):
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
         ser_append_missing_bc.to_csv(self.missing_bcs_file, mode='a', header=False)
+
+    def create_sampling_rate_from_good_reads_graph(self) -> None:
+        """
+        This function takes in a list of integers and creates a graph with the x-axis being the sampling rate
+        and the y-axis being the count of different values in arr[0].
+        The sampling rate will be in increments of 10% starting from 0% until 100%.
+        """
+
+        df_good_reads = pd.read_csv(self.results_good_reads_file)
+
+        sampling_rates = [i / 10 for i in range(11)]  # create a list of sampling rates from 0% to 100%
+        counts = []  # list to store counts of different values in arr[0]
+        # Iterate over the sampling rates
+        for sampling_rate in sampling_rates:
+            # Sample the dataframe with the current sampling rate
+            sampled_df = df_good_reads.sample(frac=sampling_rate)
+
+            # Count the number of different values in the "bc" column
+            count = sampled_df["bc"].nunique()
+
+            # Add the count to the list
+            counts.append(count)
+
+        # Plot the graph
+        plt.plot(sampling_rates, counts)
+        plt.title("sampling_rate_graph")
+        plt.xlabel('Sampling Rate %')
+        plt.ylabel('Count of Different Values')
+        plt.savefig(self.sampling_rate_from_good_reads_graph)
+        plt.close()
 
     def for_each_bc_count_reads_read_to_csv(self, output_file: Union[Path, str]) -> pd.DataFrame:
         with open(output_file, "ab") as f:
@@ -451,14 +493,16 @@ class AnalyzeFastqData:
     def for_each_bc_count_reads_read(self, csv_output_file: Union[Path, str]) -> None:
         self.for_each_bc_count_reads_read_to_csv(csv_output_file)
         self.hist_foreach_bc_read_count(csv_output_file)
-        self.hist_foreach_read_count_count_bc(csv_output_file)
+        self.hist_foreach_read_count_count_bc(csv_output_file=csv_output_file)
         self.hist_foreach_error_count_of_bc()
 
     def create_folders(self) -> None:
         utilities.is_dir_exists(self.output_hist_folder)
+        utilities.is_dir_exists(self.output_folder)
         utilities.is_dir_exists(self.output_heatmap_folder)
         utilities.is_dir_exists(self.output_graphs_folder)
         utilities.is_dir_exists(self.output_csv_folder)
+        utilities.is_dir_exists(self.output_line_graphs_folder)
 
     def run(self):
         self.create_folders()
@@ -486,3 +530,6 @@ class AnalyzeFastqData:
 
         # For each bc count amount of reads sequenced
         self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file)
+
+        # Create graph with sampling rate
+        self.create_sampling_rate_from_good_reads_graph()

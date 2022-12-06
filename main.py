@@ -22,6 +22,7 @@ if __name__ == '__main__':
                                           count_reads_for_each_bc_file=config['count_reads_for_each_bc_file'],
                                           missing_bcs_file=config['missing_bcs_file'],
                                           output_hist_folder=config['output_hist_folder'],
+                                          output_folder=config['output_folder'],
                                           output_graphs_folder=config['output_graphs_folder'],
                                           output_csv_folder=config['output_csv_folder'],
                                           output_heatmap_folder=config['output_heatmap_folder'],
