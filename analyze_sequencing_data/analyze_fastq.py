@@ -12,7 +12,7 @@ from pandas import DataFrame
 from pandas.io.parsers import TextFileReader
 from tqdm import tqdm
 
-import dna_storage_experiment.utilities.utilities as utilities
+import utilities.utilities as utilities
 
 
 def compare_with_errors(read, seq, max_dist=3):

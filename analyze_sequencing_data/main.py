@@ -1,5 +1,6 @@
-from dna_storage_experiment.analyze_sequencing_data.analyze_fastq import AnalyzeFastqData
-from dna_storage_experiment.analyze_sequencing_data.config import config_analyze
+from analyze_sequencing_data.config import config_analyze
+from analyze_sequencing_data.analyze_fastq import AnalyzeFastqData
+
 
 if __name__ == '__main__':
 
