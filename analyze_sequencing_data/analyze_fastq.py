@@ -19,20 +19,6 @@ def compare_with_errors(read, seq, max_dist=3):
     return sum(r != s for r, s in zip(read, seq)) <= max_dist
 
 
-def verify_const_universal(read, const_design):
-    for s_idx, s in const_design.iterrows():
-        pos = int(s['Pos'])
-        if not compare_with_errors(read[pos:pos + 20], s['Seq']):
-            return False
-    return True
-
-
-def verify_const_universal_and_reverse_complement(read, const_design):
-    if verify_const_universal(read, const_design):
-        return read
-    return SeqIO.SeqRecord("None")
-
-
 class AnalyzeFastqData:
     def __init__(self, input_file: Union[Path, str],
                  const_design_file: Union[Path, str],
@@ -65,7 +51,10 @@ class AnalyzeFastqData:
                  k_mer_representative_to_z: Dict,
                  payload_pos: List,
                  sampling_rate_from_good_reads_graph: Union[Path, str],
-                 output_line_graphs_folder: Union[Path, str]
+                 output_line_graphs_folder: Union[Path, str],
+                 cycles_array: List,
+                 bc_cycles_array: List,
+                 universal_len: int,
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -99,6 +88,9 @@ class AnalyzeFastqData:
         self.payload_pos = payload_pos
         self.sampling_rate_from_good_reads_graph = sampling_rate_from_good_reads_graph
         self.output_line_graphs_folder = output_line_graphs_folder
+        self.cycles_array = cycles_array
+        self.bc_cycles_array = bc_cycles_array
+        self.universal_len = universal_len
 
     # Verify universal
 
@@ -122,10 +114,21 @@ class AnalyzeFastqData:
     def identify_barcode(self, read, barcodes_design):
         pos = self.barcode_len
         for s_idx, s in barcodes_design.iterrows():
-            if compare_with_errors(read[pos:pos + 20], s['Seq']):
+            if compare_with_errors(read[pos:pos + self.barcode_len], s['Seq']):
                 return s_idx
         return 0
 
+    def verify_const_universal(self, read, const_design):
+        for s_idx, s in const_design.iterrows():
+            pos = int(s['Pos'])
+            if not compare_with_errors(read[pos:pos + self.universal_len], s['Seq']):
+                return False
+        return True
+
+    def verify_const_universal_and_reverse_complement(self, read, const_design):
+        if self.verify_const_universal(read, const_design):
+            return read
+        return SeqIO.SeqRecord("None")
     def open_fastq(self) -> List[str]:
         with open(self.input_file, 'r') as inf:
             reads = list(SeqIO.parse(inf, 'fastq'))
@@ -166,7 +169,7 @@ class AnalyzeFastqData:
         none = SeqIO.SeqRecord("None")
 
         with open(self.results_good_reads_file, "ab") as f:
-            cols_names = [['bc', 'c1', 'c2', 'c3', 'c4']]
+            cols_names = [self.bc_cycles_array]
             np.savetxt(f, cols_names, fmt='%s', delimiter=",")
 
         for read_idx, read in enumerate(reads):
@@ -175,7 +178,7 @@ class AnalyzeFastqData:
                 with open(self.results_good_reads_file, "ab") as f:
                     np.savetxt(f, res, fmt='%i', delimiter=",")
                 res = list()
-            read = verify_const_universal_and_reverse_complement(read, const_design)
+            read = self.verify_const_universal_and_reverse_complement(read, const_design)
             if read.seq == none.seq:
                 failed += 1
                 continue
@@ -207,14 +210,14 @@ class AnalyzeFastqData:
         amount_of_bc = self.amount_of_bc + 1
         for i in range(amount_of_bc):
             dict_bc_i = {}
-            for payload in ['c1', 'c2', 'c3', 'c4']:
+            for payload in self.cycles_array:
                 dict_p = {
                     payload: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0,
                               14: 0,
                               15: 0, 16: 0}}
                 dict_bc_i.update(dict_p)
             dict_bc[i] = dict_bc_i
-        df_bc = df.sort_values(["bc", "c1", "c2", "c3", "c4"], ascending=True, key=np.sin)
+        df_bc = df.sort_values(self.bc_cycles_array, ascending=True, key=np.sin)
         df_bc.fillna(0)
         for row_idx, row in tqdm(df_bc.iterrows()):
             for location_payload, payload in row[1:].items():
@@ -238,21 +241,21 @@ class AnalyzeFastqData:
         # init dict_bc_most_common_i
         for i in range(amount_of_bc):
             dict_bc_most_common_i = {}
-            for payload in ['c1', 'c2', 'c3', 'c4']:
+            for payload in self.cycles_array:
                 dict_p = {payload: []}
                 dict_bc_most_common_i.update(dict_p)
             dict_bc_most_common[i] = dict_bc_most_common_i
 
         # find the config['subset_size'] most common
         for bc_i in range(1, amount_of_bc):
-            for payload in ['c1', 'c2', 'c3', 'c4']:
+            for payload in self.cycles_array:
                 del dict_bc[bc_i][payload][0]
 
                 most_common = heapq.nlargest(self.subset_size, dict_bc[bc_i][payload],
                                              key=dict_bc[bc_i][payload].get)
                 dict_bc_most_common[bc_i][payload] = most_common
 
-                print(f'bc = {bc_i}, cycle = {payload}, 5 most common = {most_common}')
+                print(f'bc = {bc_i}, cycle = {payload}, {self.subset_size} most common = {most_common}')
                 self.hist_per_bc(dict_bc_payload=dict_bc[bc_i][payload], bc=bc_i, payload=payload)
 
         utilities.write_dict_to_csv(dict_bc_most_common, self.results_most_common_file)
@@ -265,7 +268,7 @@ class AnalyzeFastqData:
 
         for bc_i in range(1, (self.amount_of_bc + 1)):
             result_payload[bc_i] = []
-            for payload in ['c1', 'c2', 'c3', 'c4']:
+            for payload in self.cycles_array:
                 bc_i_str = str(bc_i)
                 d = ast.literal_eval(dict_most_common[bc_i_str][0])
                 d = d[payload]
@@ -516,10 +519,10 @@ class AnalyzeFastqData:
         # reads len showed in histogram
         self.reads_len_hist(reads=reads)
 
-        # good reads with len  220
+        # good reads with len  575
         good_reads = self.retrieve_reads_in_specific_len(reads=reads)
 
-        # Write the good reads with len 220 to results_good_reads.csv
+        # Write the good reads with len 575 to results_good_reads.csv
         self.reads_results_to_csv(reads=good_reads,
                                   const_design=const_design_pd,
                                   payload_design=payload_design_pd,

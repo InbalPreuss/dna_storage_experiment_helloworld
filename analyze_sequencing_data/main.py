@@ -41,6 +41,9 @@ if __name__ == '__main__':
                                           k_mer_representative_to_z=config['k_mer_representative_to_z'],
                                           payload_pos=config['payload_pos'],
                                           sampling_rate_from_good_reads_graph=config['sampling_rate_from_good_reads_graph'],
-                                          output_line_graphs_folder=config['output_line_graphs_folder']
+                                          output_line_graphs_folder=config['output_line_graphs_folder'],
+                                          cycles_array=config['cycles_array'],
+                                          bc_cycles_array=config['bc_cycles_array'],
+                                          universal_len=config['universal_len'],
                                           )
     analyze_fastq_data.run()

@@ -9,20 +9,12 @@ def build_config():
                          'TAA': 'X5',
                          'TCT': 'X6',
                          'TTC': 'X7',
-                         'TGG': 'X8',
-                         'GAG': 'X9',
-                         'GCC': 'X10',
-                         'GTT': 'X11',
-                         'GGA': 'X12',
-                         'CAC': 'X13',
-                         'CCG': 'X14',
-                         'CTA': 'X15',
-                         'CGT': 'X16'}
+                         'TGG': 'X8'}
 
     shrink_dict_size = len(shrink_dict_3_mer)
 
-    subset_size = 5
-    bits_per_z = 12
+    subset_size = 4
+    bits_per_z = 6
     k_mer_representative = itertools.combinations(['X' + str(i) for i in range(1, shrink_dict_size + 1)], subset_size)
     x_combinations = [set(k) for k in k_mer_representative]
     z = itertools.combinations(['Z' + str(i) for i in range(1, len(x_combinations) + 1)], 1)
@@ -34,20 +26,25 @@ def build_config():
     k_mer_representative_to_z = dict(zip(k_mer_representative, z))
     z_to_k_mer_representative = dict(zip(z, k_mer_representative))
 
+    cycles_array = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"]
+
     config = {
-        'payload_pos': [60, 100, 140, 180],
-        'amount_of_bc': 167,
-        'design_len': 220,
-        'payload_len': 20,
-        'universal_len': 20,
-        'barcode_len': 20,
-        'subset_size': 5,
-        'amount_of_payloads': 16,
+        'payload_pos': [150, 200, 250, 300, 350, 400, 450, 500],
+        'amount_of_bc': 64,
+        'design_len': 575,
+        'payload_len': 25,
+        'universal_len': 25,
+        'barcode_len': 75,
+        'subset_size': 4,
+        'amount_of_payloads': 8,
         'k_mer_representative_to_z': k_mer_representative_to_z,
         'z_to_k_mer_representative': z_to_k_mer_representative,
+        "cycles_array": cycles_array,
+        "bc_cycles_array": ["bc"] + cycles_array,
 
         # 167 BC analysis
-        'input_file': "data/output_prefix.assembled.fastq",
+        # 'input_file': "data/output_prefix.assembled.fastq",
+        'input_file': "data/raw_data/sequencing_output_fastq/all_sequencing_output.fastq",
         'results_most_common_file': "output/csv/results_most_common.csv",
         'const_design_file': "config/design.csv",
         'barcodes_design_file': "config/barcodes_design.csv",
