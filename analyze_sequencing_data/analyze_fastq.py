@@ -15,7 +15,7 @@ from tqdm import tqdm
 import utilities.utilities as utilities
 
 
-def compare_with_errors(read, seq, max_dist=3):
+def compare_with_errors(read, seq, max_dist=6):
     return sum(r != s for r, s in zip(read, seq)) <= max_dist
 
 
@@ -55,7 +55,9 @@ class AnalyzeFastqData:
                  cycles_array: List,
                  bc_cycles_array: List,
                  universal_len: int,
-                 payload_len: int
+                 payload_len: int,
+                 five_prime_len: int,
+                 three_prime_len: int
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -93,6 +95,8 @@ class AnalyzeFastqData:
         self.bc_cycles_array = bc_cycles_array
         self.universal_len = universal_len
         self.payload_len=payload_len
+        self.three_prime_len=three_prime_len
+        self.five_prime_len=five_prime_len
 
     # Verify universal
 
@@ -114,7 +118,7 @@ class AnalyzeFastqData:
 
     # Identify which barcode in each position
     def identify_barcode(self, read, barcodes_design):
-        pos = self.barcode_len
+        pos = self.universal_len + self.five_prime_len
         for s_idx, s in barcodes_design.iterrows():
             if compare_with_errors(read[pos:pos + self.barcode_len], s['Seq']):
                 return s_idx

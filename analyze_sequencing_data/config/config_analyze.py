@@ -35,6 +35,8 @@ def build_config():
         'payload_len': 25,
         'universal_len': 25,
         'barcode_len': 75,
+        'five_prime_len': 25,
+        'three_prime_len': 25,
         'subset_size': 4,
         'amount_of_payloads': 8,
         'k_mer_representative_to_z': k_mer_representative_to_z,

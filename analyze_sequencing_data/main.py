@@ -44,6 +44,9 @@ if __name__ == '__main__':
                                           output_line_graphs_folder=config['output_line_graphs_folder'],
                                           cycles_array=config['cycles_array'],
                                           bc_cycles_array=config['bc_cycles_array'],
+                                          payload_len=config['payload_len'],
                                           universal_len=config['universal_len'],
+                                          five_prime_len=config['five_prime_len'],
+                                          three_prime_len=config['three_prime_len']
                                           )
     analyze_fastq_data.run()
