@@ -2,6 +2,7 @@ import ast
 import heapq
 from pathlib import Path
 from typing import Union, Dict, List, Tuple
+from operator import itemgetter
 
 import numpy as np
 import pandas as pd
@@ -141,15 +142,30 @@ class AnalyzeFastqData:
 
         return reads
 
+    def most_frequency_value_in_reads(self, lens: Dict) -> None:
+        length_counts = {}
+        for len in lens:
+            if len in length_counts:
+                length_counts[len] += 1
+            else:
+                length_counts[len] = 1
+
+        sorted_lengths = sorted(length_counts.items(), key=itemgetter(1), reverse=True)
+        print(length_counts)
+        most_common_length = max(length_counts, key=length_counts.get)
+        print(f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} apperances')
     def reads_len_hist(self, reads: List[str]) -> None:
         len_reads = len(reads)
-        print(len_reads)
+        print(f'len_reads: {len_reads}')
         lens = [len(r) for r in reads]
-        plt.hist(lens, bins=50)
+        plt.hist(lens, bins=2000)
         plt.xlabel('length')
         plt.ylabel('# reads')
         plt.savefig(self.len_reads_hist_output_file)
         plt.close()
+
+        # most frequency value in reads
+        self.most_frequency_value_in_reads(lens=lens)
 
     def upload_design(self) -> Tuple[Union[TextFileReader, DataFrame],
                                      Union[TextFileReader, DataFrame],
@@ -162,7 +178,7 @@ class AnalyzeFastqData:
 
     def retrieve_reads_in_specific_len(self, reads: List[str]) -> List[str]:
         reads = [r for r in reads if len(r) == self.len_reads_to_retrieve]
-        print(len(reads))
+        print(f'{len(reads)} reads in len {self.len_reads_to_retrieve}')
         for read in reads:
             print('\n')
             print(read.seq)
