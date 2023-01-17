@@ -55,6 +55,7 @@ class AnalyzeFastqData:
                  cycles_array: List,
                  bc_cycles_array: List,
                  universal_len: int,
+                 payload_len: int
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -91,6 +92,7 @@ class AnalyzeFastqData:
         self.cycles_array = cycles_array
         self.bc_cycles_array = bc_cycles_array
         self.universal_len = universal_len
+        self.payload_len=payload_len
 
     # Verify universal
 
@@ -105,7 +107,7 @@ class AnalyzeFastqData:
         res = [0, ] * len(self.payload_pos)
         for p_idx, pos in enumerate(self.payload_pos):
             for s_idx, s in payload_design.iterrows():
-                if compare_with_errors(read[pos:pos + 20], s['Seq']):
+                if compare_with_errors(read[pos:pos + self.payload_len], s['Seq']):
                     res[p_idx] = s_idx
                     break
         return res
@@ -157,6 +159,9 @@ class AnalyzeFastqData:
     def retrieve_reads_in_specific_len(self, reads: List[str]) -> List[str]:
         reads = [r for r in reads if len(r) == self.len_reads_to_retrieve]
         print(len(reads))
+        for read in reads:
+            print('\n')
+            print(read.seq)
         return reads
 
     def reads_results_to_csv(self, reads: List[str],
