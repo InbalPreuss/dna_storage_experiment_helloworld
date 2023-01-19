@@ -70,7 +70,16 @@ def build_config():
         'hist_foreach_bc_read_count_file': "output/graphs/hist/hist_foreach_bc_read_count",
         'hist_foreach_read_count_count_bc_file': "output/graphs/hist/hist_foreach_read_count_count_bc",
         'hist_foreach_error_count_of_bc_file': "output/graphs/hist/hist_foreach_error_count_of_bc",
-        'design_simulation_file': 'data/simulation_data.3.encoder_results_file.dna'
+        'design_simulation_file': 'data/simulation_data.3.encoder_results_file.dna',
+
+        # BC analysis
+        'levenshtein_per_dist_path': 'output/csv/levenshtein_per_distance.csv',
+        'hamming_per_dist_path': 'output/csv/hamming_per_distance.csv',
+        'heatmap_levenshtein_dist_path': 'output/graphs/heatmap/heatmap_levenshtein_dist.jpeg',
+        'heatmap_hamming_dist_path': 'output/graphs/heatmap/heatmap_hamming_dist.jpeg',
+        'hist_count_seq_per_dist_hamming': 'output/graphs/hist/hist_count_seq_per_dist_hamming.png',
+        'hist_count_seq_per_dist_levenshtein': 'output/graphs/hist/hist_count_seq_per_dist_levenshtein.png',
+
     }
 
     return config

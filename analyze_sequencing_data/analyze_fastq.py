@@ -179,9 +179,6 @@ class AnalyzeFastqData:
     def retrieve_reads_in_specific_len(self, reads: List[str]) -> List[str]:
         reads = [r for r in reads if len(r) == self.len_reads_to_retrieve]
         print(f'{len(reads)} reads in len {self.len_reads_to_retrieve}')
-        for read in reads:
-            print('\n')
-            print(read.seq)
         return reads
 
     def reads_results_to_csv(self, reads: List[str],
