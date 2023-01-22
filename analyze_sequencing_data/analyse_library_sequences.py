@@ -73,25 +73,26 @@ class AnalyzeLibrarySeqs:
         print(f'dict_dist_count_each_pair: {dict_dist_count_each_pair}')
         return distance_seq1_seq2_matrix, dict_dist, dict_dist_count_each_pair
 
-    def matrix_to_heatmap(self, dist_calculation_name, heatmap_dist_path: str, csv_path: str) -> None:
+    def matrix_to_heatmap(self, dist_calculation_name: str, heatmap_dist_path: str, csv_path: str) -> None:
         df = pd.read_csv(csv_path, index_col=0)
         plt.figure(figsize=(20, 15))
         plt.xlabel('BCs', fontsize=30)
         plt.ylabel('BCs', fontsize=30)
-        plt.suptitle('BCs - distance between each pair', fontsize=40)
+        plt.suptitle('BCs - ' + dist_calculation_name + ' distance between each pair', fontsize=40)
         plt.imshow(df, cmap='hot', interpolation='nearest')
         cbar = plt.colorbar()
         cbar.set_label(label="red - low dist. yellow - high dist.", size=20)
         plt.savefig(heatmap_dist_path)
         plt.close()
 
-    def hist_per_dist(self, dict_dist_count: Dict, dist_calculation_name: str, hist_count_seq_per_dist_path: str) -> None:
+    def hist_per_dist(self, dict_dist_count: Dict, dist_calculation_name: str,
+                      hist_count_seq_per_dist_path: str) -> None:
 
         plt.bar(dict_dist_count.keys(), dict_dist_count.values())
         plt.xlabel('distance')
         plt.ylabel('amount of sequences')
         plt.title(dist_calculation_name)
-        plt.suptitle('Distance between each pair' + str(self.amount_of_bc) + 'seq')
+        plt.suptitle('Distance between each pair BC seq. ' + str(self.amount_of_bc) + ' seqs')
         plt.savefig(hist_count_seq_per_dist_path)
         plt.close()
 
@@ -122,12 +123,6 @@ class AnalyzeLibrarySeqs:
                                hist_count_seq_per_dist_path=dict_dist_info['hist_count_seq_per_dist_path']
                                )
 
-        # # Levenshtein dist between a pair of BC
-        # levenshtein_dist_matrix, dict_per_dist_levenshtein, dict_dist_count_levenshtein = self.calculate_dist(df=df_bc, dist_calculation_name="levenshtein")
-        # matrix_to_csv(levenshtein_dist_matrix, df_guides_3k_file_name, 'levenshtein')
-        # matrix_to_heatmap('levenshtein')
-        # dict_dist_to_csv(dict_per_dist_levenshtein, config['levenshtein_per_dist_path'])
-        # hist_per_dist(dict_dist_count_levenshtein, 'levenshtein')
 
 
 if __name__ == '__main__':
