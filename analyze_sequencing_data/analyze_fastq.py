@@ -3,6 +3,7 @@ import heapq
 from pathlib import Path
 from typing import Union, Dict, List, Tuple
 from operator import itemgetter
+from Levenshtein import distance as lev
 
 import numpy as np
 import pandas as pd
@@ -20,6 +21,21 @@ def compare_with_errors(read, seq, max_dist=6):
     return sum(r != s for r, s in zip(read, seq)) <= max_dist
 
 
+def most_frequency_value_in_reads(lens: Dict) -> None:
+    length_counts = {}
+    for len in lens:
+        if len in length_counts:
+            length_counts[len] += 1
+        else:
+            length_counts[len] = 1
+
+    sorted_lengths = sorted(length_counts.items(), key=itemgetter(1), reverse=True)
+    print(length_counts)
+    most_common_length = max(length_counts, key=length_counts.get)
+    print(
+        f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} apperances')
+
+
 class AnalyzeFastqData:
     def __init__(self, input_file: Union[Path, str],
                  const_design_file: Union[Path, str],
@@ -27,6 +43,7 @@ class AnalyzeFastqData:
                  barcodes_design_file: Union[Path, str],
                  len_reads_hist_output_file: Union[Path, str],
                  results_good_reads_file: Union[Path, str],
+                 results_good_reads_with_len_bigger_then_y: Union[Path, str],
                  results_most_common_file: Union[Path, str],
                  design_simulation_file: Union[Path, str],
                  compare_design_to_experiment_results_output_file: Union[Path, str],
@@ -58,13 +75,15 @@ class AnalyzeFastqData:
                  universal_len: int,
                  payload_len: int,
                  five_prime_len: int,
-                 three_prime_len: int
+                 three_prime_len: int,
+                 th_minimum_len_reads_to_analyse: int
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
         self.payload_design_file = payload_design_file
         self.barcodes_design_file = barcodes_design_file
         self.results_good_reads_file = results_good_reads_file
+        self.results_good_reads_with_len_bigger_then_y = results_good_reads_with_len_bigger_then_y
         self.len_reads_hist_output_file = len_reads_hist_output_file
         self.results_most_common_file = results_most_common_file
         self.design_simulation_file = design_simulation_file
@@ -95,65 +114,138 @@ class AnalyzeFastqData:
         self.cycles_array = cycles_array
         self.bc_cycles_array = bc_cycles_array
         self.universal_len = universal_len
-        self.payload_len=payload_len
-        self.three_prime_len=three_prime_len
-        self.five_prime_len=five_prime_len
+        self.payload_len = payload_len
+        self.three_prime_len = three_prime_len
+        self.five_prime_len = five_prime_len
+        self.th_minimum_len_reads_to_analyse = th_minimum_len_reads_to_analyse
 
     # Verify universal
 
-    def identify_oligo(self, read, payload_design, barcodes_design):
-        bc = self.identify_barcode(read, barcodes_design)
-        payload = self.identify_payload(read, payload_design)
+    def identify_oligo(self, read: SeqIO, payload_design: pd.DataFrame, barcodes_design: pd.DataFrame,
+                       oligo_start_pos=0, dist_option='hamming') -> List[int]:
+        bc = self.identify_barcode(read=read, barcodes_design=barcodes_design, oligo_start_pos=oligo_start_pos,
+                                   dist_option=dist_option)
+        payload = self.identify_payload(read=read, payload_design=payload_design, oligo_start_pos=oligo_start_pos,
+                                        dist_option=dist_option)
         payload.insert(0, bc)
         return payload
 
     # Identify which payload in each position
-    def identify_payload(self, read, payload_design):
+    def identify_payload(self, read: SeqIO, payload_design: pd.DataFrame, oligo_start_pos: int, dist_option: str) -> \
+            List[int]:
         res = [0, ] * len(self.payload_pos)
         for p_idx, pos in enumerate(self.payload_pos):
             for s_idx, s in payload_design.iterrows():
-                if compare_with_errors(read[pos:pos + self.payload_len], s['Seq']):
-                    res[p_idx] = s_idx
-                    break
+                pos = pos + oligo_start_pos
+                if dist_option == 'hamming':
+                    if compare_with_errors(read[pos:pos + self.payload_len], s['Seq']):
+                        res[p_idx] = s_idx
+                        break
+                else:  # Levenshtein
+                    if lev(read[pos:pos + self.payload_len], s['Seq']) <= 6:
+                        res[p_idx] = s_idx
+                        break
         return res
 
     # Identify which barcode in each position
-    def identify_barcode(self, read, barcodes_design):
-        pos = self.universal_len + self.five_prime_len
+    def identify_barcode(self, read: SeqIO, barcodes_design: pd.DataFrame, oligo_start_pos: int,
+                         dist_option: str) -> int:
+        pos = self.universal_len + self.five_prime_len + oligo_start_pos
         for s_idx, s in barcodes_design.iterrows():
-            if compare_with_errors(read[pos:pos + self.barcode_len], s['Seq']):
-                return s_idx
+            if dist_option == 'hamming':
+                if compare_with_errors(read[pos:pos + self.barcode_len], s['Seq']):
+                    return s_idx
+            else:  # Levenshtein
+                if lev(read[pos:pos + self.barcode_len], s['Seq']) <= 6:
+                    return s_idx
+
         return 0
 
-    def verify_const_universal(self, read, const_design):
+    def verify_const_universal(self, read: SeqIO, const_design: pd.DataFrame, oligo_start_pos: int,
+                               dist_option: str) -> bool:
         for s_idx, s in const_design.iterrows():
-            pos = int(s['Pos'])
-            if not compare_with_errors(read[pos:pos + self.universal_len], s['Seq']):
-                return False
+            pos = int(s['Pos']) + oligo_start_pos
+            if dist_option == 'hamming':
+                if not compare_with_errors(read[pos:pos + self.universal_len], s['Seq']):
+                    return False
+            else:  # Levenshtein
+                if not lev(read[pos:pos + self.universal_len], s['Seq']) <= 6:
+                    return False
         return True
 
-    def verify_const_universal_and_reverse_complement(self, read, const_design):
-        if self.verify_const_universal(read, const_design):
+    def verify_const_universal_and_reverse_complement(self, read: SeqIO, const_design: pd.DataFrame, oligo_start_pos=0,
+                                                      dist_option='hamming') -> SeqIO:
+        if self.verify_const_universal(read=read, const_design=const_design, oligo_start_pos=oligo_start_pos,
+                                       dist_option=dist_option):
             return read
         return SeqIO.SeqRecord("None")
+
     def open_fastq(self) -> List[str]:
         with open(self.input_file, 'r') as inf:
             reads = list(SeqIO.parse(inf, 'fastq'))
 
         return reads
 
-    def most_frequency_value_in_reads(self, lens: Dict) -> None:
-        length_counts = {}
-        for len in lens:
-            if len in length_counts:
-                length_counts[len] += 1
-            else:
-                length_counts[len] = 1
+    def find_u2_location_in_read(self, read: SeqIO, u2: str) -> int:
+        # TODO: what should be the maximum dist to find the universal?
+        max_distance = 6
+        best_location = 0
+        best_distance = float('inf')
+        from Levenshtein import distance
+        for i in range(len(read) - len(u2) + 1):
+            substring = read[i:i + len(u2)]
+            distance = lev(substring, u2)
+            if distance <= max_distance:
+                if distance < best_distance:
+                    best_distance = distance
+                    best_location = i
+        if best_location != 0:
+            return best_location - self.barcode_len
+        return best_location
 
-        sorted_lengths = sorted(length_counts.items(), key=itemgetter(1), reverse=True)
-        print(length_counts)
-        most_common_length = max(length_counts, key=length_counts.get)
-        print(f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} apperances')
+    def extract_start_position_and_reads_results_to_csv(self, reads: List[str],
+                                                        const_design: pd.DataFrame,
+                                                        payload_design: pd.DataFrame,
+                                                        barcodes_design: pd.DataFrame,
+                                                        dist_option: str,
+                                                        output_csv_path: Path) -> None:
+        reads = self.retrieve_reads_in_specific_len_at_least(reads=reads, length=self.th_minimum_len_reads_to_analyse)
+        res = list()
+        failed = 0
+        read_idx = 0
+        none = SeqIO.SeqRecord("None")
+        u2 = const_design.loc[const_design.index == "Universal2", "Seq"]['Universal2']
+        with open(output_csv_path, "ab") as f:
+            cols_names = [self.bc_cycles_array]
+            np.savetxt(f, cols_names, fmt='%s', delimiter=",")
+
+        for read_idx, read in enumerate(reads):
+            if read_idx % 1000 == 999:
+                print(f'processed {read_idx + 1} reads, {failed} ({100 * failed / (read_idx + 1) : .2f}%) failed')
+                with open(output_csv_path, "ab") as f:
+                    np.savetxt(f, res, fmt='%i', delimiter=",")
+                res = list()
+            u2_location = self.find_u2_location_in_read(read=read, u2=u2)
+            read = self.verify_const_universal_and_reverse_complement(read=read,
+                                                                      const_design=const_design,
+                                                                      oligo_start_pos=u2_location,
+                                                                      dist_option=dist_option)
+            if read.seq == none.seq:
+                failed += 1
+                continue
+
+            res.append(self.identify_oligo(read=read,
+                                           payload_design=payload_design,
+                                           barcodes_design=barcodes_design,
+                                           oligo_start_pos=u2_location,
+                                           dist_option=dist_option))
+            if res[-1].__contains__(0):
+                failed += 1
+
+        print(f'processed {read_idx + 1} reads, {failed} ({100 * failed / (read_idx + 1) : .2f}%) failed')
+        with open(output_csv_path, "ab") as f:
+            np.savetxt(f, res, fmt='%i', delimiter=",")
+
     def reads_len_hist(self, reads: List[str]) -> None:
         len_reads = len(reads)
         print(f'len_reads: {len_reads}')
@@ -165,7 +257,7 @@ class AnalyzeFastqData:
         plt.close()
 
         # most frequency value in reads
-        self.most_frequency_value_in_reads(lens=lens)
+        most_frequency_value_in_reads(lens=lens)
 
     def upload_design(self) -> Tuple[Union[TextFileReader, DataFrame],
                                      Union[TextFileReader, DataFrame],
@@ -176,9 +268,14 @@ class AnalyzeFastqData:
 
         return const_design_pd, payload_design_pd, barcodes_design_pd
 
-    def retrieve_reads_in_specific_len(self, reads: List[str]) -> List[str]:
-        reads = [r for r in reads if len(r) == self.len_reads_to_retrieve]
-        print(f'{len(reads)} reads in len {self.len_reads_to_retrieve}')
+    def retrieve_reads_in_specific_len(self, reads: List[str], length: int) -> List[str]:
+        reads = [r for r in reads if len(r) == length]
+        print(f'{len(reads)} reads in len {len}')
+        return reads
+
+    def retrieve_reads_in_specific_len_at_least(self, reads: List[str], length: int) -> List[str]:
+        reads = [r for r in reads if len(r) >= length]
+        print(f'{len(reads)} reads in len {len}')
         return reads
 
     def reads_results_to_csv(self, reads: List[str],
@@ -189,28 +286,30 @@ class AnalyzeFastqData:
         failed = 0
         read_idx = 0
         none = SeqIO.SeqRecord("None")
+        u2 = const_design.loc[const_design.index == "Universal2", "Seq"]['Universal2']
 
-        with open(self.results_good_reads_file, "ab") as f:
+        with open(self.output_csv_path, "ab") as f:
             cols_names = [self.bc_cycles_array]
             np.savetxt(f, cols_names, fmt='%s', delimiter=",")
 
         for read_idx, read in enumerate(reads):
             if read_idx % 1000 == 999:
                 print(f'processed {read_idx + 1} reads, {failed} ({100 * failed / (read_idx + 1) : .2f}%) failed')
-                with open(self.results_good_reads_file, "ab") as f:
+                with open(self.output_csv_path, "ab") as f:
                     np.savetxt(f, res, fmt='%i', delimiter=",")
                 res = list()
-            read = self.verify_const_universal_and_reverse_complement(read, const_design)
+            u2_location = self.find_u2_location_in_read(read=read, u2=u2)
+            read = self.verify_const_universal_and_reverse_complement(read=read, const_design=const_design)
             if read.seq == none.seq:
                 failed += 1
                 continue
 
-            res.append(self.identify_oligo(read, payload_design, barcodes_design))
+            res.append(self.identify_oligo(read=read, payload_design=payload_design, barcodes_design=barcodes_design))
             if res[-1].__contains__(0):
                 failed += 1
 
         print(f'processed {read_idx + 1} reads, {failed} ({100 * failed / (read_idx + 1) : .2f}%) failed')
-        with open(self.results_good_reads_file, "ab") as f:
+        with open(self.output_csv_path, "ab") as f:
             np.savetxt(f, res, fmt='%i', delimiter=",")
 
     def hist_per_bc(self, dict_bc_payload, bc, payload):
@@ -223,10 +322,10 @@ class AnalyzeFastqData:
         plt.savefig(self.hist_per_bc_file + '/bc=' + str(bc) + '_payload=' + payload + '_hist.png')
         plt.close()
 
-    def analyze_results_good_reads(self) -> Dict:
+    def analyze_results_good_reads(self, input_csv_path: Path) -> Dict:
         # read your csv to a dataframe
 
-        df = pd.read_csv(self.results_good_reads_file)
+        df = pd.read_csv(input_csv_path)
         dict_bc = {}
 
         amount_of_bc = self.amount_of_bc + 1
@@ -418,8 +517,8 @@ class AnalyzeFastqData:
         self.create_heatmap_with_rectangles_on_most_common(dict_foreach_bc_and_x_count_all_cycles_matrix=
                                                            dict_foreach_bc_and_x_count_all_cycles_matrix, ax=ax)
 
-    def find_most_common(self) -> None:
-        dict_bc = self.analyze_results_good_reads()
+    def find_most_common(self, input_csv_path: Path) -> None:
+        dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path)
         self.most_common_for_each_bc(dict_bc=dict_bc)
         result_payload = self.convert_most_common_to_letters_in_new_alphabet()
         self.compare_most_common_to_design(result_payload=result_payload)
@@ -430,14 +529,14 @@ class AnalyzeFastqData:
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
         ser_append_missing_bc.to_csv(self.missing_bcs_file, mode='a', header=False)
 
-    def create_sampling_rate_from_good_reads_graph(self) -> None:
+    def create_sampling_rate_from_good_reads_graph(self, input_csv_path:Path) -> None:
         """
         This function takes in a list of integers and creates a graph with the x-axis being the sampling rate
         and the y-axis being the count of different values in arr[0].
         The sampling rate will be in increments of 10% starting from 0% until 100%.
         """
 
-        df_good_reads = pd.read_csv(self.results_good_reads_file)
+        df_good_reads = pd.read_csv(self.input_csv_path)
 
         sampling_rates = [i / 10 for i in range(11)]  # create a list of sampling rates from 0% to 100%
         counts = []  # list to store counts of different values in arr[0]
@@ -460,12 +559,12 @@ class AnalyzeFastqData:
         plt.savefig(self.sampling_rate_from_good_reads_graph)
         plt.close()
 
-    def for_each_bc_count_reads_read_to_csv(self, output_file: Union[Path, str]) -> pd.DataFrame:
+    def for_each_bc_count_reads_read_to_csv(self, output_file: Union[Path, str], input_csv_path: Path) -> pd.DataFrame:
         with open(output_file, "ab") as f:
             cols_names = [['bc', 'count']]
             np.savetxt(f, cols_names, fmt='%s', delimiter=",")
 
-        df = pd.read_csv(self.results_good_reads_file)
+        df = pd.read_csv(input_csv_path)
         forth_column = df.iloc[:, 0]
         counts = forth_column.value_counts()
         count_sorted = counts.sort_index()
@@ -515,8 +614,8 @@ class AnalyzeFastqData:
         plt.savefig(self.hist_foreach_read_count_count_bc_file)
         plt.close()
 
-    def for_each_bc_count_reads_read(self, csv_output_file: Union[Path, str]) -> None:
-        self.for_each_bc_count_reads_read_to_csv(csv_output_file)
+    def for_each_bc_count_reads_read(self, csv_output_file: Union[Path, str], input_csv_path: Path) -> None:
+        self.for_each_bc_count_reads_read_to_csv(output_file=csv_output_file, input_csv_path=input_csv_path)
         self.hist_foreach_bc_read_count(csv_output_file)
         self.hist_foreach_read_count_count_bc(csv_output_file=csv_output_file)
         self.hist_foreach_error_count_of_bc()
@@ -538,23 +637,33 @@ class AnalyzeFastqData:
         # reads
         reads = self.open_fastq()
 
-        # reads len showed in histogram
-        self.reads_len_hist(reads=reads)
+        # # reads len showed in histogram
+        # self.reads_len_hist(reads=reads)
 
-        # good reads with len  575
-        good_reads = self.retrieve_reads_in_specific_len(reads=reads)
+        # extract the universal2 -> extract the rest of the seqs
+        self.extract_start_position_and_reads_results_to_csv(reads=reads,
+                                                             const_design=const_design_pd,
+                                                             payload_design=payload_design_pd,
+                                                             barcodes_design=barcodes_design_pd,
+                                                             dist_option='levenshtein',
+                                                             output_csv_path=self.results_good_reads_with_len_bigger_then_y)
 
-        # Write the good reads with len 575 to results_good_reads.csv
-        self.reads_results_to_csv(reads=good_reads,
-                                  const_design=const_design_pd,
-                                  payload_design=payload_design_pd,
-                                  barcodes_design=barcodes_design_pd)
+        input_csv_path = self.results_good_reads_with_len_bigger_then_y
+        # # good reads with len 575
+        # good_reads = self.retrieve_reads_in_specific_len(reads=reads, length=self.len_reads_to_retrieve)
+        #
+        # # Write the good reads with len 575 to results_good_reads.csv
+        # self.reads_results_to_csv(reads=good_reads,
+        #                           const_design=const_design_pd,
+        #                           payload_design=payload_design_pd,
+        #                           barcodes_design=barcodes_design_pd,
+        #                           output_csv_path=results_good_reads_file)
 
         # Find most common for each bc and for every cycle in that bc in results of good reads
-        self.find_most_common()
+        self.find_most_common(input_csv_path=input_csv_path)
 
         # For each bc count amount of reads sequenced
-        self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file)
+        self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file, input_csv_path=input_csv_path)
 
         # Create graph with sampling rate
-        self.create_sampling_rate_from_good_reads_graph()
+        self.create_sampling_rate_from_good_reads_graph(input_csv_path=input_csv_path)

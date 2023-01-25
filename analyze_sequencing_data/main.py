@@ -11,6 +11,7 @@ if __name__ == '__main__':
                                           barcodes_design_file=config['barcodes_design_file'],
                                           len_reads_hist_output_file=config['len_reads_hist_output_file'],
                                           results_good_reads_file=config['results_good_reads_file'],
+                                          results_good_reads_with_len_bigger_then_y=config['results_good_reads_with_len_bigger_then_y'],
                                           results_most_common_file=config['results_most_common_file'],
                                           design_simulation_file=config['design_simulation_file'],
                                           compare_design_to_experiment_results_output_file=config[
@@ -46,17 +47,18 @@ if __name__ == '__main__':
                                           payload_len=config['payload_len'],
                                           universal_len=config['universal_len'],
                                           five_prime_len=config['five_prime_len'],
-                                          three_prime_len=config['three_prime_len']
+                                          three_prime_len=config['three_prime_len'],
+                                          th_minimum_len_reads_to_analyse=config['th_minimum_len_reads_to_analyse']
                                           )
     analyze_fastq_data.run()
 
-    analyze_library_seqs = AnalyzeLibrarySeqs(barcodes_design_file=config['barcodes_design_file'],
-                                              levenshtein_per_dist_path=config['levenshtein_per_dist_path'],
-                                              hamming_per_dist_path=config['hamming_per_dist_path'],
-                                              heatmap_hamming_dist_path=config['heatmap_hamming_dist_path'],
-                                              heatmap_levenshtein_dist_path=config['heatmap_levenshtein_dist_path'],
-                                              amount_of_bc=config['amount_of_bc'],
-                                              hist_count_seq_per_dist_hamming=config['hist_count_seq_per_dist_hamming'],
-                                              hist_count_seq_per_dist_levenshtein=config['hist_count_seq_per_dist_levenshtein']
-                                              )
-    analyze_library_seqs.run()
+    # analyze_library_seqs = AnalyzeLibrarySeqs(barcodes_design_file=config['barcodes_design_file'],
+    #                                           levenshtein_per_dist_path=config['levenshtein_per_dist_path'],
+    #                                           hamming_per_dist_path=config['hamming_per_dist_path'],
+    #                                           heatmap_hamming_dist_path=config['heatmap_hamming_dist_path'],
+    #                                           heatmap_levenshtein_dist_path=config['heatmap_levenshtein_dist_path'],
+    #                                           amount_of_bc=config['amount_of_bc'],
+    #                                           hist_count_seq_per_dist_hamming=config['hist_count_seq_per_dist_hamming'],
+    #                                           hist_count_seq_per_dist_levenshtein=config['hist_count_seq_per_dist_levenshtein']
+    #                                           )
+    # analyze_library_seqs.run()

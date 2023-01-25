@@ -14,7 +14,7 @@ def build_config():
     shrink_dict_size = len(shrink_dict_3_mer)
 
     subset_size = 4
-    bits_per_z = 6
+    bits_per_z = 7
     k_mer_representative = itertools.combinations(['X' + str(i) for i in range(1, shrink_dict_size + 1)], subset_size)
     x_combinations = [set(k) for k in k_mer_representative]
     z = itertools.combinations(['Z' + str(i) for i in range(1, len(x_combinations) + 1)], 1)
@@ -24,7 +24,7 @@ def build_config():
     k_mer_representative = itertools.combinations(['X' + str(i) for i in range(1, shrink_dict_size + 1)], subset_size)
     k_mer_representative = list(k_mer_representative)[:2 ** bits_per_z]
     k_mer_representative_to_z = dict(zip(k_mer_representative, z))
-    z_to_k_mer_representative = dict(zip(z, k_mer_representative))
+    z_to_k_mer_representative = dict(zip(z, k_mer_representative)) # Z1: {X1,X2,X3,X4}
 
     cycles_array = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"]
 
@@ -37,8 +37,9 @@ def build_config():
         'barcode_len': 75,
         'five_prime_len': 25,
         'three_prime_len': 25,
-        'subset_size': 4,
+        'subset_size': subset_size,
         'amount_of_payloads': 8,
+        'th_minimum_len_reads_to_analyse': 500,
         'k_mer_representative_to_z': k_mer_representative_to_z,
         'z_to_k_mer_representative': z_to_k_mer_representative,
         "cycles_array": cycles_array,
@@ -52,6 +53,7 @@ def build_config():
         'barcodes_design_file': "config/barcodes_design.csv",
         'payload_design_file': "config/payload_design.csv",
         'results_good_reads_file': "output/csv/results_good_reads.csv",
+        'results_good_reads_with_len_bigger_then_y': "output/csv/results_good_reads_with_len_bigger_then_y.csv",
         'count_reads_for_each_bc_file': "output/csv/count_reads_for_each_bc.csv",
         'missing_bcs_file': "output/csv/missing_bc.csv",
         'output_csv_folder': "output/csv/",
