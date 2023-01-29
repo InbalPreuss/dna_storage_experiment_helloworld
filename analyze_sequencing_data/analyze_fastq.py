@@ -421,29 +421,22 @@ class AnalyzeFastqData:
         for bc_i_idx, bc_i_design in enumerate(df_design_simulation_T_file.iterrows()):
             if bc_i_idx == 0:
                 continue
-            # for bc_i_idx, bc_i_design in enumerate(inf):
             count_all_z_mm = 0
-            # TODO: Compare z design to output design
-            # array_bc_i_design = bc_i_design.split("\n")
-            # array_bc_i_design = array_bc_i_design[0].split(",")
-            # for z_i in zip(array_bc_i_design[1:self.subset_size], result_payload[bc_i_idx + 1]):
-            #     if z_i[0] != list(z_i[1])[0]:
             bc_i_design = bc_i_design[1]
-            for z_i_design, z_i_results in zip(bc_i_design, result_payload[bc_i_idx + 1]):
+            for z_i_design, z_i_results in zip(bc_i_design, result_payload[bc_i_idx]):
                 if z_i_design != list(z_i_results)[0]:
                     count_all_z_mm += 1
             with open(compare_design_to_experiment_results_output_file, "ab") as f:
-                bc = bc_i_idx + 1
                 design_z = " ".join(bc_i_design)
                 design_x = str(
-                    {z: self.z_to_k_mer_representative[z] for z in bc_i_design}).replace(
+                    [{z: self.z_to_k_mer_representative[z]} for z in bc_i_design]).replace(
                     ",",
                     " ")
-                experiment_results_z = " ".join([list(z.keys())[0] for z in result_payload[bc_i_idx + 1]])
-                experiment_results_x = str(result_payload[bc_i_idx + 1]).replace(",", " ")
+                experiment_results_z = " ".join([list(z.keys())[0] for z in result_payload[bc_i_idx]])
+                experiment_results_x = str(result_payload[bc_i_idx]).replace(",", " ")
                 is_retrieved_all_z = (count_all_z_mm == 0)
                 count_all_z_mm = count_all_z_mm
-                cols = [[bc, design_z, design_x, experiment_results_z, experiment_results_x, is_retrieved_all_z,
+                cols = [[bc_i_idx, design_z, design_x, experiment_results_z, experiment_results_x, is_retrieved_all_z,
                          count_all_z_mm]]
                 np.savetxt(f, cols, fmt='%s', delimiter=",")
 
@@ -556,7 +549,7 @@ class AnalyzeFastqData:
         The sampling rate will be in increments of 10% starting from 0% until 100%.
         """
 
-        df_good_reads = pd.read_csv(self.input_csv_path)
+        df_good_reads = pd.read_csv(input_csv_path)
 
         sampling_rates = [i / 10 for i in range(11)]  # create a list of sampling rates from 0% to 100%
         counts = []  # list to store counts of different values in arr[0]
