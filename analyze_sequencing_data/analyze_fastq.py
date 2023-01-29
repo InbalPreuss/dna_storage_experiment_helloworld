@@ -14,7 +14,7 @@ from pandas import DataFrame
 from pandas.io.parsers import TextFileReader
 from tqdm import tqdm
 
-import utilities.utilities as utilities
+import utilities.utilities as uts
 
 
 def compare_with_errors(read, seq, max_dist=6):
@@ -46,6 +46,7 @@ class AnalyzeFastqData:
                  results_good_reads_with_len_bigger_then_y: Union[Path, str],
                  results_most_common_file: Union[Path, str],
                  design_simulation_file: Union[Path, str],
+                 design_results_only_z_file: Union[Path, str],
                  compare_design_to_experiment_results_output_file: Union[Path, str],
                  foreach_bc_payload_count_file: Union[Path, str],
                  heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str],
@@ -118,6 +119,7 @@ class AnalyzeFastqData:
         self.three_prime_len = three_prime_len
         self.five_prime_len = five_prime_len
         self.th_minimum_len_reads_to_analyse = th_minimum_len_reads_to_analyse
+        self.design_results_only_z_file = design_results_only_z_file
 
     # Verify universal
 
@@ -179,12 +181,6 @@ class AnalyzeFastqData:
                                        dist_option=dist_option):
             return read
         return SeqIO.SeqRecord("None")
-
-    def open_fastq(self) -> List[str]:
-        with open(self.input_file, 'r') as inf:
-            reads = list(SeqIO.parse(inf, 'fastq'))
-
-        return reads
 
     def find_u2_location_in_read(self, read: SeqIO, u2: str) -> int:
         # TODO: what should be the maximum dist to find the universal?
@@ -318,11 +314,12 @@ class AnalyzeFastqData:
         plt.xticks(range(amount_of_payloads))
         plt.xlim(0.5, amount_of_payloads)
         plt.title('bc=' + str(bc) + 'payload=' + payload)
-        utilities.is_dir_exists(self.hist_per_bc_file)
+        uts.is_dir_exists(self.hist_per_bc_file)
         plt.savefig(self.hist_per_bc_file + '/bc=' + str(bc) + '_payload=' + payload + '_hist.png')
         plt.close()
 
-    def analyze_results_good_reads(self, input_csv_path: Path) -> Dict:
+    def analyze_results_good_reads(self, input_csv_path: Union[Path, str],
+                                   dict_to_csv: Union[Path, str]) -> Dict:
         # read your csv to a dataframe
 
         df = pd.read_csv(input_csv_path)
@@ -351,11 +348,11 @@ class AnalyzeFastqData:
 
                 dict_bc[int(row['bc'])][location_payload][int(payload)] += 1
 
-        utilities.write_dict_to_csv(dict_bc, self.foreach_bc_payload_count_file)
+        uts.write_dict_to_csv(dict_bc, dict_to_csv)
 
         return dict_bc
 
-    def most_common_for_each_bc(self, dict_bc: Dict) -> None:
+    def most_common_for_each_bc(self, dict_bc: Dict, dict_to_csv_path: Union[Path, str]) -> None:
         dict_bc_most_common = {}
         amount_of_bc = self.amount_of_bc + 1
 
@@ -379,16 +376,18 @@ class AnalyzeFastqData:
                 print(f'bc = {bc_i}, cycle = {payload}, {self.subset_size} most common = {most_common}')
                 self.hist_per_bc(dict_bc_payload=dict_bc[bc_i][payload], bc=bc_i, payload=payload)
 
-        utilities.write_dict_to_csv(dict_bc_most_common, self.results_most_common_file)
+        uts.write_dict_to_csv(dict=dict_bc_most_common, csv_path=dict_to_csv_path)
 
-    def convert_most_common_to_letters_in_new_alphabet(self) -> Dict:
-        df = pd.read_csv(self.results_most_common_file, index_col=0)
+    def convert_most_common_to_letters_in_new_alphabet(self, results_most_common_file: Union[Path, str]) -> Dict:
+        df = pd.read_csv(results_most_common_file, index_col=0)
         dict_most_common = df.to_dict("list")
         result_payload = {}
+        result_only_z = {}
         print(dict_most_common)
 
         for bc_i in range(1, (self.amount_of_bc + 1)):
             result_payload[bc_i] = []
+            result_only_z[bc_i] = []
             for payload in self.cycles_array:
                 bc_i_str = str(bc_i)
                 d = ast.literal_eval(dict_most_common[bc_i_str][0])
@@ -396,48 +395,59 @@ class AnalyzeFastqData:
                 dict_convert_to_x = []
                 for i in d:
                     dict_convert_to_x.append('X' + str(i))
-                dict_convert_to_x = tuple(utilities.sorted_human(dict_convert_to_x))
+                dict_convert_to_x = tuple(uts.sorted_human(dict_convert_to_x))
 
                 try:
                     z = self.k_mer_representative_to_z[dict_convert_to_x]
                 except KeyError:
                     z = 'Z1'  # The X tuple is out of range
                 result_payload[bc_i].append({z: dict_convert_to_x})
+                result_only_z[bc_i].append(z)
 
-        return result_payload
+        return result_payload, result_only_z
 
-    def compare_most_common_to_design(self, result_payload: Dict) -> None:
-        with open(self.compare_design_to_experiment_results_output_file, "ab") as f:
+    def compare_most_common_to_design(self, result_payload: Dict,
+                                      compare_design_to_experiment_results_output_file: Union[Path, str],
+                                      design_simulation_file: Union[Path, str]) -> None:
+        with open(compare_design_to_experiment_results_output_file, "ab") as f:
             cols_names = [
                 ['bc', 'design_z', 'design_x', 'experiment_results_z', 'experiment_results_x', 'is_retrieved_all_z',
                  'count_all_z_mm']]
             np.savetxt(f, cols_names, fmt='%s', delimiter=",")
 
-        with open(self.design_simulation_file, 'r') as inf:
-            for bc_i_idx, bc_i_design in enumerate(inf):
-                count_all_z_mm = 0
-
-                array_bc_i_design = bc_i_design.split("\n")
-                array_bc_i_design = array_bc_i_design[0].split(",")
-                for z_i in zip(array_bc_i_design[1:self.subset_size], result_payload[bc_i_idx + 1]):
-                    if z_i[0] != list(z_i[1])[0]:
-                        count_all_z_mm += 1
-                with open(self.compare_design_to_experiment_results_output_file, "ab") as f:
-                    bc = bc_i_idx + 1
-                    design_z = " ".join(array_bc_i_design[1:self.subset_size])
-                    design_x = str(
-                        {z: self.z_to_k_mer_representative[z] for z in array_bc_i_design[1:self.subset_size]}).replace(
-                        ",",
-                        " ")
-                    experiment_results_z = " ".join([list(z.keys())[0] for z in result_payload[bc_i_idx + 1]])
-                    experiment_results_x = str(result_payload[bc_i_idx + 1]).replace(",", " ")
-                    is_retrieved_all_z = (count_all_z_mm == 0)
-                    count_all_z_mm = count_all_z_mm
-                    cols = [[bc, design_z, design_x, experiment_results_z, experiment_results_x, is_retrieved_all_z,
-                             count_all_z_mm]]
-                    np.savetxt(f, cols, fmt='%s', delimiter=",")
+        df_design_simulation_file = pd.read_csv(design_simulation_file)
+        df_design_simulation_T_file = df_design_simulation_file.T
+        # with open(design_simulation_file, 'r') as inf:
+        for bc_i_idx, bc_i_design in enumerate(df_design_simulation_T_file.iterrows()):
+            if bc_i_idx == 0:
+                continue
+            # for bc_i_idx, bc_i_design in enumerate(inf):
+            count_all_z_mm = 0
+            # TODO: Compare z design to output design
+            # array_bc_i_design = bc_i_design.split("\n")
+            # array_bc_i_design = array_bc_i_design[0].split(",")
+            # for z_i in zip(array_bc_i_design[1:self.subset_size], result_payload[bc_i_idx + 1]):
+            #     if z_i[0] != list(z_i[1])[0]:
+            for z_i in bc_i_design:
+                if z_i[0] != list(z_i[1])[0]:
+                    count_all_z_mm += 1
+            with open(compare_design_to_experiment_results_output_file, "ab") as f:
+                bc = bc_i_idx + 1
+                design_z = " ".join(bc_i_design[1:self.subset_size])
+                design_x = str(
+                    {z: self.z_to_k_mer_representative[z] for z in bc_i_design[1:self.subset_size]}).replace(
+                    ",",
+                    " ")
+                experiment_results_z = " ".join([list(z.keys())[0] for z in result_payload[bc_i_idx + 1]])
+                experiment_results_x = str(result_payload[bc_i_idx + 1]).replace(",", " ")
+                is_retrieved_all_z = (count_all_z_mm == 0)
+                count_all_z_mm = count_all_z_mm
+                cols = [[bc, design_z, design_x, experiment_results_z, experiment_results_x, is_retrieved_all_z,
+                         count_all_z_mm]]
+                np.savetxt(f, cols, fmt='%s', delimiter=",")
 
     def create_heatmap_with_rectangles_on_most_common(self, dict_foreach_bc_and_x_count_all_cycles_matrix: Dict,
+                                                      heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str],
                                                       ax) -> None:
 
         # remove col 0 and row 0
@@ -481,10 +491,10 @@ class AnalyzeFastqData:
                         ))
                 cycle_idx += 1
 
-        plt.savefig(self.heatmap_foreach_bc_and_x_count_with_most_common_file, dpi=400)
+        plt.savefig(heatmap_foreach_bc_and_x_count_with_most_common_file, dpi=400)
         plt.close()
 
-    def heatmap_foreach_bc_and_x_count_with_most_common(self) -> None:
+    def heatmap_foreach_bc_and_x_count_with_most_common(self, heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str]) -> None:
         df = pd.read_csv(self.foreach_bc_payload_count_file)
         dict_foreach_bc_and_x_count_str = df.to_dict("list")
 
@@ -515,15 +525,24 @@ class AnalyzeFastqData:
         dict_foreach_bc_and_x_count_all_cycles_matrix = pd.DataFrame(dict_foreach_bc_and_x_count_all_cycles).T.fillna(0)
 
         self.create_heatmap_with_rectangles_on_most_common(dict_foreach_bc_and_x_count_all_cycles_matrix=
-                                                           dict_foreach_bc_and_x_count_all_cycles_matrix, ax=ax)
+                                                           dict_foreach_bc_and_x_count_all_cycles_matrix,
+                                                           heatmap_foreach_bc_and_x_count_with_most_common_file=heatmap_foreach_bc_and_x_count_with_most_common_file,
+                                                           ax=ax)
 
-    def find_most_common(self, input_csv_path: Path) -> None:
-        dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path)
-        self.most_common_for_each_bc(dict_bc=dict_bc)
-        result_payload = self.convert_most_common_to_letters_in_new_alphabet()
-        self.compare_most_common_to_design(result_payload=result_payload)
+    def find_most_common(self, input_csv_path: Union[Path, str],
+                         foreach_bc_payload_count_file_dict_to_csv: Union[Path, str],
+                         most_common_dict_to_csv_path: Union[Path, str],
+                         compare_design_to_experiment_results_output_file: Union[Path, str],
+                         design_simulation_file: Union[Path, str],
+                         heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str]) -> None:
+        # dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path, dict_to_csv=foreach_bc_payload_count_file_dict_to_csv)
+        # self.most_common_for_each_bc(dict_bc=dict_bc, dict_to_csv_path=most_common_dict_to_csv_path)
+        result_payload, result_only_z = self.convert_most_common_to_letters_in_new_alphabet(results_most_common_file=most_common_dict_to_csv_path)
+        self.compare_most_common_to_design(result_payload=result_payload,
+                                           compare_design_to_experiment_results_output_file=compare_design_to_experiment_results_output_file,
+                                           design_simulation_file=design_simulation_file)
 
-        self.heatmap_foreach_bc_and_x_count_with_most_common()
+        self.heatmap_foreach_bc_and_x_count_with_most_common(heatmap_foreach_bc_and_x_count_with_most_common_file=heatmap_foreach_bc_and_x_count_with_most_common_file)
 
     def missing_bc_to_csv(self, dict_append_missing_bc):
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
@@ -621,12 +640,12 @@ class AnalyzeFastqData:
         self.hist_foreach_error_count_of_bc()
 
     def create_folders(self) -> None:
-        utilities.is_dir_exists(self.output_hist_folder)
-        utilities.is_dir_exists(self.output_folder)
-        utilities.is_dir_exists(self.output_heatmap_folder)
-        utilities.is_dir_exists(self.output_graphs_folder)
-        utilities.is_dir_exists(self.output_csv_folder)
-        utilities.is_dir_exists(self.output_line_graphs_folder)
+        uts.is_dir_exists(self.output_hist_folder)
+        uts.is_dir_exists(self.output_folder)
+        uts.is_dir_exists(self.output_heatmap_folder)
+        uts.is_dir_exists(self.output_graphs_folder)
+        uts.is_dir_exists(self.output_csv_folder)
+        uts.is_dir_exists(self.output_line_graphs_folder)
 
     def run(self):
         self.create_folders()
@@ -635,18 +654,18 @@ class AnalyzeFastqData:
         const_design_pd, payload_design_pd, barcodes_design_pd = self.upload_design()
 
         # reads
-        reads = self.open_fastq()
+        # reads = uts.open_fastq(input_file=self.input_file)
 
         # # reads len showed in histogram
         # self.reads_len_hist(reads=reads)
 
         # extract the universal2 -> extract the rest of the seqs
-        self.extract_start_position_and_reads_results_to_csv(reads=reads,
-                                                             const_design=const_design_pd,
-                                                             payload_design=payload_design_pd,
-                                                             barcodes_design=barcodes_design_pd,
-                                                             dist_option='levenshtein',
-                                                             output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+        # self.extract_start_position_and_reads_results_to_csv(reads=reads,
+        #                                                      const_design=const_design_pd,
+        #                                                      payload_design=payload_design_pd,
+        #                                                      barcodes_design=barcodes_design_pd,
+        #                                                      dist_option='levenshtein',
+        #                                                      output_csv_path=self.results_good_reads_with_len_bigger_then_y)
 
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
         # # good reads with len 575
@@ -660,7 +679,12 @@ class AnalyzeFastqData:
         #                           output_csv_path=results_good_reads_file)
 
         # Find most common for each bc and for every cycle in that bc in results of good reads
-        self.find_most_common(input_csv_path=input_csv_path)
+        self.find_most_common(input_csv_path=input_csv_path,
+                              foreach_bc_payload_count_file_dict_to_csv=self.foreach_bc_payload_count_file,
+                              most_common_dict_to_csv_path=self.results_most_common_file,
+                              compare_design_to_experiment_results_output_file=self.compare_design_to_experiment_results_output_file,
+                              design_simulation_file=self.design_simulation_file,
+                              heatmap_foreach_bc_and_x_count_with_most_common_file=self.heatmap_foreach_bc_and_x_count_with_most_common_file)
 
         # For each bc count amount of reads sequenced
         self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file, input_csv_path=input_csv_path)

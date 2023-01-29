@@ -1,9 +1,11 @@
 import csv
+from pathlib import Path
 from typing import List, Dict
 import re
 import os
 
 import pandas as pd
+from Bio import SeqIO
 
 
 def sorted_human(iterable: List[str]) -> List[str]:
@@ -43,6 +45,20 @@ def hamming_distance(string1, string2):
     return distance
 
 
-def dict_to_csv(dict_dist: Dict, file_name: str):
-    df = pd.DataFrame(dict_dist)
+def dict_to_csv(dict: Dict, file_name: str):
+    df = pd.DataFrame(dict)
     df.to_csv(file_name)
+
+
+def open_fasta(input_file: Path) -> List[str]:
+    with open(input_file, 'r') as inf:
+        reads = list(SeqIO.parse(inf, 'fasta'))
+
+    return reads
+
+
+def open_fastq(input_file: Path) -> List[str]:
+    with open(input_file, 'r') as inf:
+        reads = list(SeqIO.parse(inf, 'fastq'))
+
+    return reads

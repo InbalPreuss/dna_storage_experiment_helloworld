@@ -117,7 +117,7 @@ class AnalyzeLibrarySeqs:
             self.matrix_to_heatmap(dist_calculation_name=dict_dist_info['dist_calculation_name'],
                                    heatmap_dist_path=dict_dist_info['heatmap_dist_path'],
                                    csv_path=dict_dist_info['csv_path'])
-            uts.dict_to_csv(dict_dist=dict_per_dist, file_name=dict_dist_info['csv_path'])
+            uts.dict_to_csv(dict=dict_per_dist, file_name=dict_dist_info['csv_path'])
             self.hist_per_dist(dict_dist_count=dict_dist_count,
                                dist_calculation_name=dict_dist_info['dist_calculation_name'],
                                hist_count_seq_per_dist_path=dict_dist_info['hist_count_seq_per_dist_path']

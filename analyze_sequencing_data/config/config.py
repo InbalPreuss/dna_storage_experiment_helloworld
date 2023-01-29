@@ -45,9 +45,10 @@ def build_config():
         "cycles_array": cycles_array,
         "bc_cycles_array": ["bc"] + cycles_array,
 
-        # 167 BC analysis
+        # BC analysis
         # 'input_file': "data/output_prefix.assembled.fastq",
         'input_file': "data/raw_data/sequencing_output_fastq/all_sequencing_output.fastq",
+        'design_before_conversion_file': "data/raw_data/design/all_design_before_parse.fasta",
         'results_most_common_file': "output/csv/results_most_common.csv",
         'const_design_file': "config/design.csv",
         'barcodes_design_file': "config/barcodes_design.csv",
@@ -72,7 +73,14 @@ def build_config():
         'hist_foreach_bc_read_count_file': "output/graphs/hist/hist_foreach_bc_read_count",
         'hist_foreach_read_count_count_bc_file': "output/graphs/hist/hist_foreach_read_count_count_bc",
         'hist_foreach_error_count_of_bc_file': "output/graphs/hist/hist_foreach_error_count_of_bc",
+
+        # design
         'design_simulation_file': 'data/simulation_data.3.encoder_results_file.dna',
+        'design_results_as_z_file': 'output/csv/design_results_as_z.csv',
+        'design_results_only_z_file': 'output/csv/design_results_only_z.csv',
+        'design_results_as_x_file': 'output/csv/design_results_as_x.csv',
+        'design_most_common_dict_to_csv_path': 'output/csv/design_most_common_dict_to_csv.csv',
+        'design_foreach_bc_payload_count_file_dict_to_csv': 'output/csv/design_foreach_bc_payload_count_file_dict_to_csv.csv',
 
         # BC analysis
         'levenshtein_per_dist_path': 'output/csv/levenshtein_per_distance.csv',
