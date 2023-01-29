@@ -1,7 +1,7 @@
 import ast
 import heapq
 from pathlib import Path
-from typing import Union, Dict, List, Tuple
+from typing import Union, Dict, List, Tuple, Hashable
 from operator import itemgetter
 from Levenshtein import distance as lev
 
@@ -21,7 +21,7 @@ def compare_with_errors(read, seq, max_dist=6):
     return sum(r != s for r, s in zip(read, seq)) <= max_dist
 
 
-def most_frequency_value_in_reads(lens: Dict) -> None:
+def most_frequency_value_in_reads(lens: List[int]) -> None:
     length_counts = {}
     for len in lens:
         if len in length_counts:
@@ -33,7 +33,7 @@ def most_frequency_value_in_reads(lens: Dict) -> None:
     print(length_counts)
     most_common_length = max(length_counts, key=length_counts.get)
     print(
-        f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} apperances')
+        f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} appearances')
 
 
 class AnalyzeFastqData:
@@ -529,8 +529,8 @@ class AnalyzeFastqData:
                          compare_design_to_experiment_results_output_file: Union[Path, str],
                          design_simulation_file: Union[Path, str],
                          heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str]) -> None:
-        # dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path, dict_to_csv=foreach_bc_payload_count_file_dict_to_csv)
-        # self.most_common_for_each_bc(dict_bc=dict_bc, dict_to_csv_path=most_common_dict_to_csv_path)
+        dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path, dict_to_csv=foreach_bc_payload_count_file_dict_to_csv)
+        self.most_common_for_each_bc(dict_bc=dict_bc, dict_to_csv_path=most_common_dict_to_csv_path)
         result_payload, result_only_z = self.convert_most_common_to_letters_in_new_alphabet(results_most_common_file=most_common_dict_to_csv_path)
         self.compare_most_common_to_design(result_payload=result_payload,
                                            compare_design_to_experiment_results_output_file=compare_design_to_experiment_results_output_file,
@@ -542,7 +542,7 @@ class AnalyzeFastqData:
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
         ser_append_missing_bc.to_csv(self.missing_bcs_file, mode='a', header=False)
 
-    def create_sampling_rate_from_good_reads_graph(self, input_csv_path:Path) -> None:
+    def create_sampling_rate_from_good_reads_graph(self, input_csv_path: Path) -> None:
         """
         This function takes in a list of integers and creates a graph with the x-axis being the sampling rate
         and the y-axis being the count of different values in arr[0].
@@ -583,7 +583,7 @@ class AnalyzeFastqData:
         count_sorted = counts.sort_index()
 
         dict_append_missing_bc = {}
-        for bc_idx in range(1,self.amount_of_bc+1):
+        for bc_idx in range(1, self.amount_of_bc+1):
             if bc_idx not in count_sorted or count_sorted[bc_idx] == 0:
                 dict_append_missing_bc[bc_idx] = 0
 
@@ -644,18 +644,18 @@ class AnalyzeFastqData:
         const_design_pd, payload_design_pd, barcodes_design_pd = self.upload_design()
 
         # reads
-        # reads = uts.open_fastq(input_file=self.input_file)
+        reads = uts.open_fastq(input_file=self.input_file)
 
-        # # reads len showed in histogram
-        # self.reads_len_hist(reads=reads)
+        # reads len showed in histogram
+        self.reads_len_hist(reads=reads)
 
         # extract the universal2 -> extract the rest of the seqs
-        # self.extract_start_position_and_reads_results_to_csv(reads=reads,
-        #                                                      const_design=const_design_pd,
-        #                                                      payload_design=payload_design_pd,
-        #                                                      barcodes_design=barcodes_design_pd,
-        #                                                      dist_option='levenshtein',
-        #                                                      output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+        self.extract_start_position_and_reads_results_to_csv(reads=reads,
+                                                             const_design=const_design_pd,
+                                                             payload_design=payload_design_pd,
+                                                             barcodes_design=barcodes_design_pd,
+                                                             dist_option='levenshtein',
+                                                             output_csv_path=self.results_good_reads_with_len_bigger_then_y)
 
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
         # # good reads with len 575
