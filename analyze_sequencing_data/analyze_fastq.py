@@ -583,13 +583,9 @@ class AnalyzeFastqData:
         count_sorted = counts.sort_index()
 
         dict_append_missing_bc = {}
-        idx = 0
-        for bc, count in count_sorted.iteritems():
-            if idx != bc:
-                for idx in range(idx, bc):
-                    dict_append_missing_bc[idx] = 0
-                    idx += 1
-            idx += 1
+        for bc_idx in range(1,self.amount_of_bc+1):
+            if bc_idx not in count_sorted or count_sorted[bc_idx] == 0:
+                dict_append_missing_bc[bc_idx] = 0
 
         self.missing_bc_to_csv(dict_append_missing_bc)
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
