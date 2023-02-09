@@ -182,11 +182,12 @@ class AnalyzeFastqData:
             return read
         return SeqIO.SeqRecord("None")
 
-    def find_u2_location_in_read(self, read: SeqIO, u2: str) -> int:
+    def find_u2_location_in_read(self, read: SeqIO, u2: str) -> (int, bool):
         # TODO: what should be the maximum dist to find the universal?
         max_distance = 6
         best_location = 0
         best_distance = float('inf')
+        is_found_u2 = False
         from Levenshtein import distance
         for i in range(len(read) - len(u2) + 1):
             substring = read[i:i + len(u2)]
@@ -196,8 +197,9 @@ class AnalyzeFastqData:
                     best_distance = distance
                     best_location = i
         if best_location != 0:
-            return best_location - self.barcode_len
-        return best_location
+            is_found_u2 = True
+            return (best_location - self.barcode_len), is_found_u2
+        return best_location, is_found_u2
 
     def extract_start_position_and_reads_results_to_csv(self, reads: List[str],
                                                         const_design: pd.DataFrame,
@@ -211,6 +213,7 @@ class AnalyzeFastqData:
         read_idx = 0
         none = SeqIO.SeqRecord("None")
         u2 = const_design.loc[const_design.index == "Universal2", "Seq"]['Universal2']
+        count_found_u2 = 0
         with open(output_csv_path, "ab") as f:
             cols_names = [self.bc_cycles_array]
             np.savetxt(f, cols_names, fmt='%s', delimiter=",")
@@ -221,11 +224,13 @@ class AnalyzeFastqData:
                 with open(output_csv_path, "ab") as f:
                     np.savetxt(f, res, fmt='%i', delimiter=",")
                 res = list()
-            u2_location = self.find_u2_location_in_read(read=read, u2=u2)
+            u2_location, is_found_u2 = self.find_u2_location_in_read(read=read, u2=u2)
             read = self.verify_const_universal_and_reverse_complement(read=read,
                                                                       const_design=const_design,
                                                                       oligo_start_pos=u2_location,
                                                                       dist_option=dist_option)
+            if is_found_u2:
+                count_found_u2 += 1
             if read.seq == none.seq:
                 failed += 1
                 continue
@@ -241,6 +246,8 @@ class AnalyzeFastqData:
         print(f'processed {read_idx + 1} reads, {failed} ({100 * failed / (read_idx + 1) : .2f}%) failed')
         with open(output_csv_path, "ab") as f:
             np.savetxt(f, res, fmt='%i', delimiter=",")
+
+        print(count_found_u2)
 
     def reads_len_hist(self, reads: List[str]) -> None:
         len_reads = len(reads)
@@ -294,7 +301,7 @@ class AnalyzeFastqData:
                 with open(self.output_csv_path, "ab") as f:
                     np.savetxt(f, res, fmt='%i', delimiter=",")
                 res = list()
-            u2_location = self.find_u2_location_in_read(read=read, u2=u2)
+            u2_location, is_found_u2 = self.find_u2_location_in_read(read=read, u2=u2)
             read = self.verify_const_universal_and_reverse_complement(read=read, const_design=const_design)
             if read.seq == none.seq:
                 failed += 1
@@ -329,10 +336,10 @@ class AnalyzeFastqData:
         for i in range(amount_of_bc):
             dict_bc_i = {}
             for payload in self.cycles_array:
-                dict_p = {
-                    payload: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0,
-                              14: 0,
-                              15: 0, 16: 0}}
+                payload_dict = {}
+                for p in range(self.amount_of_payloads + 1):
+                    payload_dict[p] = 0
+                dict_p = {payload: payload_dict}
                 dict_bc_i.update(dict_p)
             dict_bc[i] = dict_bc_i
         df_bc = df.sort_values(self.bc_cycles_array, ascending=True, key=np.sin)
@@ -608,7 +615,7 @@ class AnalyzeFastqData:
     def hist_foreach_error_count_of_bc(self) -> None:
         count_sorted_with_missing_bc = pd.read_csv(self.compare_design_to_experiment_results_output_file)
         x = count_sorted_with_missing_bc["count_all_z_mm"]
-        plt.hist(x, bins=5)
+        plt.hist(x, bins=len(self.cycles_array))
         plt.xlabel('errors in bc')
         plt.ylabel('count')
         plt.savefig(self.hist_foreach_error_count_of_bc_file)
