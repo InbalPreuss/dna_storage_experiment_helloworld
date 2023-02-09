@@ -1,4 +1,10 @@
 # README.md
+### Step 0
+
+Preparing the fastq file 'input_file', that includes all the sequencing reads. 
+cat *fastq >all_sequencing_output.fastq
+
+
 ### Step 1
 Activating a virtual environment (venv)
 A virtual environment is a separate Python environment, where you can install packages without affecting the global Python installation on your system.
