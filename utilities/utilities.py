@@ -1,6 +1,6 @@
 import csv
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Union
 import re
 import os
 
@@ -62,3 +62,9 @@ def open_fastq(input_file: Path) -> List[str]:
         reads = list(SeqIO.parse(inf, 'fastq'))
 
     return reads
+
+
+def write_list_to_csv(data: List, file_name: Union[Path, str]) -> None:
+    with open(file_name, 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)

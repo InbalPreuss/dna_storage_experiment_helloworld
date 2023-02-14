@@ -21,21 +21,6 @@ def compare_with_errors(read, seq, max_dist=6):
     return sum(r != s for r, s in zip(read, seq)) <= max_dist
 
 
-def most_frequency_value_in_reads(lens: List[int]) -> None:
-    length_counts = {}
-    for len in lens:
-        if len in length_counts:
-            length_counts[len] += 1
-        else:
-            length_counts[len] = 1
-
-    sorted_lengths = sorted(length_counts.items(), key=itemgetter(1), reverse=True)
-    print(length_counts)
-    most_common_length = max(length_counts, key=length_counts.get)
-    print(
-        f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} appearances')
-
-
 class AnalyzeFastqData:
     def __init__(self, input_file: Union[Path, str],
                  const_design_file: Union[Path, str],
@@ -77,7 +62,9 @@ class AnalyzeFastqData:
                  payload_len: int,
                  five_prime_len: int,
                  three_prime_len: int,
-                 th_minimum_len_reads_to_analyse: int
+                 th_minimum_len_reads_to_analyse: int,
+                 general_information_file: Union[Path, str],
+                 count_reads_len_file: Union[Path, str]
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -120,6 +107,8 @@ class AnalyzeFastqData:
         self.five_prime_len = five_prime_len
         self.th_minimum_len_reads_to_analyse = th_minimum_len_reads_to_analyse
         self.design_results_only_z_file = design_results_only_z_file
+        self.general_information_file = general_information_file
+        self.count_reads_len_file = count_reads_len_file
 
     # Verify universal
 
@@ -249,9 +238,30 @@ class AnalyzeFastqData:
 
         print(count_found_u2)
 
+    def most_frequency_value_in_reads(self, lens: List[int]) -> None:
+        length_counts = {}
+        for len in lens:
+            if len in length_counts:
+                length_counts[len] += 1
+            else:
+                length_counts[len] = 1
+
+        sorted_lengths = sorted(length_counts.items(), key=itemgetter(1), reverse=True)
+        print(length_counts)
+        most_common_length = max(length_counts, key=length_counts.get)
+        print(
+            f'most_frequency_value_in_reads: {most_common_length} with {length_counts[most_common_length]} appearances')
+
+        # Write general information to csv
+        uts.write_list_to_csv(
+            ['most_frequency_value_in_reads:', most_common_length, 'appearances:', length_counts[most_common_length]],
+            self.general_information_file)
+        uts.write_dict_to_csv(sorted_lengths, self.count_reads_len_file)
     def reads_len_hist(self, reads: List[str]) -> None:
         len_reads = len(reads)
-        print(f'len_reads: {len_reads}')
+        uts.write_list_to_csv(['# reads', len_reads], self.general_information_file)
+        print(f'# reads: {len_reads}')
+
         lens = [len(r) for r in reads]
         plt.hist(lens, bins=2000)
         plt.xlabel('length')
@@ -260,7 +270,7 @@ class AnalyzeFastqData:
         plt.close()
 
         # most frequency value in reads
-        most_frequency_value_in_reads(lens=lens)
+        self.most_frequency_value_in_reads(lens=lens)
 
     def upload_design(self) -> Tuple[Union[TextFileReader, DataFrame],
                                      Union[TextFileReader, DataFrame],
@@ -273,12 +283,12 @@ class AnalyzeFastqData:
 
     def retrieve_reads_in_specific_len(self, reads: List[str], length: int) -> List[str]:
         reads = [r for r in reads if len(r) == length]
-        print(f'{len(reads)} reads in len {len}')
+        print(f'{len(reads)} reads in len {length}')
         return reads
 
     def retrieve_reads_in_specific_len_at_least(self, reads: List[str], length: int) -> List[str]:
         reads = [r for r in reads if len(r) >= length]
-        print(f'{len(reads)} reads in len {len}')
+        print(f'{len(reads)} reads in len at least {length}')
         return reads
 
     def reads_results_to_csv(self, reads: List[str],
@@ -650,19 +660,19 @@ class AnalyzeFastqData:
         # upload design
         const_design_pd, payload_design_pd, barcodes_design_pd = self.upload_design()
 
-        # reads
-        reads = uts.open_fastq(input_file=self.input_file)
-
-        # reads len showed in histogram
-        self.reads_len_hist(reads=reads)
-
+        # # reads
+        # reads = uts.open_fastq(input_file=self.input_file)
+        #
+        # # reads len showed in histogram
+        # self.reads_len_hist(reads=reads)
+        #
         # extract the universal2 -> extract the rest of the seqs
-        self.extract_start_position_and_reads_results_to_csv(reads=reads,
-                                                             const_design=const_design_pd,
-                                                             payload_design=payload_design_pd,
-                                                             barcodes_design=barcodes_design_pd,
-                                                             dist_option='levenshtein',
-                                                             output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+        # self.extract_start_position_and_reads_results_to_csv(reads=reads,
+        #                                                      const_design=const_design_pd,
+        #                                                      payload_design=payload_design_pd,
+        #                                                      barcodes_design=barcodes_design_pd,
+        #                                                      dist_option='levenshtein',
+        #                                                      output_csv_path=self.results_good_reads_with_len_bigger_then_y)
 
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
         # # good reads with len 575

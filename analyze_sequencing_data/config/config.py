@@ -31,6 +31,8 @@ def build_config():
     config = {
         'payload_pos': [150, 200, 250, 300, 350, 400, 450, 500],
         'amount_of_bc': 64,
+        'amount_of_payloads': 8,
+        'amount_of_universals': 11,
         'design_len': 575,
         'payload_len': 25,
         'universal_len': 25,
@@ -38,7 +40,6 @@ def build_config():
         'five_prime_len': 25,
         'three_prime_len': 25,
         'subset_size': subset_size,
-        'amount_of_payloads': 8,
         'th_minimum_len_reads_to_analyse': 500,
         'k_mer_representative_to_z': k_mer_representative_to_z,
         'z_to_k_mer_representative': z_to_k_mer_representative,
@@ -62,6 +63,8 @@ def build_config():
         'compare_design_to_experiment_results_output_file': "output/csv/compare_design_to_experiment_results.csv",
         'output_hist_folder': "output/graphs/hist/",
         'output_folder': "output/",
+        'general_information_file': "output/general_information.csv",
+        'count_reads_len_file': "output/count_reads_len.csv",
         'len_reads_hist_output_file': "output/graphs/hist/len_reads_hist.png",
         'output_graphs_folder': 'output/graphs/',
         'output_line_graphs_folder': 'output/graphs/line_graphs/',
@@ -82,13 +85,18 @@ def build_config():
         'design_most_common_dict_to_csv_path': 'output/csv/design_most_common_dict_to_csv.csv',
         'design_foreach_bc_payload_count_file_dict_to_csv': 'output/csv/design_foreach_bc_payload_count_file_dict_to_csv.csv',
 
-        # BC analysis
-        'levenshtein_per_dist_path': 'output/csv/levenshtein_per_distance.csv',
-        'hamming_per_dist_path': 'output/csv/hamming_per_distance.csv',
-        'heatmap_levenshtein_dist_path': 'output/graphs/heatmap/heatmap_levenshtein_dist.jpeg',
-        'heatmap_hamming_dist_path': 'output/graphs/heatmap/heatmap_hamming_dist.jpeg',
-        'hist_count_seq_per_dist_hamming': 'output/graphs/hist/hist_count_seq_per_dist_hamming.png',
-        'hist_count_seq_per_dist_levenshtein': 'output/graphs/hist/hist_count_seq_per_dist_levenshtein.png',
+        # motif analysis
+        'motif_analysis_folder': 'output/motif_analysis/',
+        'motif_analysis_csv_folder': 'output/motif_analysis/csv/',
+        'motif_analysis_graphs_folder': 'output/motif_analysis/graphs/',
+        'motif_analysis_hist_folder': 'output/motif_analysis/graphs/hist/',
+        'motif_analysis_heatmap_folder': 'output/motif_analysis/graphs/heatmap/',
+        'levenshtein_per_dist_path': 'output/motif_analysis/csv/levenshtein_per_distance_',
+        'hamming_per_dist_path': 'output/motif_analysis/csv/hamming_per_distance_',
+        'heatmap_levenshtein_dist_path': 'output/motif_analysis/graphs/heatmap/heatmap_levenshtein_dist_',
+        'heatmap_hamming_dist_path': 'output/motif_analysis/graphs/heatmap/heatmap_hamming_dist_',
+        'hist_count_seq_per_dist_hamming': 'output/motif_analysis/graphs/hist/hist_count_seq_per_dist_hamming_',
+        'hist_count_seq_per_dist_levenshtein': 'output/motif_analysis/graphs/hist/hist_count_seq_per_dist_levenshtein_',
 
     }
 
