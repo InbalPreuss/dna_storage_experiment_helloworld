@@ -78,7 +78,6 @@ def build_config():
         'hist_foreach_error_count_of_bc_file': "output/graphs/hist/hist_foreach_error_count_of_bc",
 
         # design
-        'design_simulation_file': 'data/simulation_data.3.encoder_results_file.dna',
         'design_results_as_z_file': 'output/csv/design_results_as_z.csv',
         'design_results_only_z_file': 'output/csv/design_results_only_z.csv',
         'design_results_as_x_file': 'output/csv/design_results_as_x.csv',

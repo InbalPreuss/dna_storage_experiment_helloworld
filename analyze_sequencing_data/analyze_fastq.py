@@ -654,36 +654,40 @@ class AnalyzeFastqData:
         uts.is_dir_exists(self.output_csv_folder)
         uts.is_dir_exists(self.output_line_graphs_folder)
 
-    def run(self):
+    def run(self, is_use_only_good_reads_with_correct_len=False):
         self.create_folders()
 
         # upload design
         const_design_pd, payload_design_pd, barcodes_design_pd = self.upload_design()
 
-        # # reads
-        # reads = uts.open_fastq(input_file=self.input_file)
-        #
-        # # reads len showed in histogram
-        # self.reads_len_hist(reads=reads)
-        #
-        # extract the universal2 -> extract the rest of the seqs
-        # self.extract_start_position_and_reads_results_to_csv(reads=reads,
-        #                                                      const_design=const_design_pd,
-        #                                                      payload_design=payload_design_pd,
-        #                                                      barcodes_design=barcodes_design_pd,
-        #                                                      dist_option='levenshtein',
-        #                                                      output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+        # reads
+        reads = uts.open_fastq(input_file=self.input_file)
+
+        # reads len showed in histogram
+        self.reads_len_hist(reads=reads)
+
 
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
-        # # good reads with len 575
-        # good_reads = self.retrieve_reads_in_specific_len(reads=reads, length=self.len_reads_to_retrieve)
-        #
-        # # Write the good reads with len 575 to results_good_reads.csv
-        # self.reads_results_to_csv(reads=good_reads,
-        #                           const_design=const_design_pd,
-        #                           payload_design=payload_design_pd,
-        #                           barcodes_design=barcodes_design_pd,
-        #                           output_csv_path=results_good_reads_file)
+
+        if is_use_only_good_reads_with_correct_len:
+            # good reads with len 575
+            good_reads = self.retrieve_reads_in_specific_len(reads=reads, length=self.len_reads_to_retrieve)
+
+            # Write the good reads with len 575 to results_good_reads.csv
+            self.reads_results_to_csv(reads=good_reads,
+                                      const_design=const_design_pd,
+                                      payload_design=payload_design_pd,
+                                      barcodes_design=barcodes_design_pd,
+                                      output_csv_path=self.results_good_reads_file)
+        else:
+            # use reads with len bigger then some y
+            # extract the universal2 -> extract the rest of the seqs
+            self.extract_start_position_and_reads_results_to_csv(reads=reads,
+                                                                 const_design=const_design_pd,
+                                                                 payload_design=payload_design_pd,
+                                                                 barcodes_design=barcodes_design_pd,
+                                                                 dist_option='levenshtein',
+                                                                 output_csv_path=self.results_good_reads_with_len_bigger_then_y)
 
         # Find most common for each bc and for every cycle in that bc in results of good reads
         self.find_most_common(input_csv_path=input_csv_path,
