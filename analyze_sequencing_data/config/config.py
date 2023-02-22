@@ -48,8 +48,8 @@ def build_config():
 
         # BC analysis
         # 'input_file': "data/output_prefix.assembled.fastq",
-        'input_file': "data/raw_data/sequencing_output_fastq/all_sequencing_output.fastq",
-        'design_before_conversion_file': "data/raw_data/design/all_design_before_parse.fasta",
+        'input_file': "data/sequencing_output_fastq/all_sequencing_output.fastq",
+        'design_before_conversion_file': "data/design/all_design_before_parse.fasta",
         'results_most_common_file': "output/csv/results_most_common.csv",
         'const_design_file': "config/design.csv",
         'barcodes_design_file': "config/barcodes_design.csv",

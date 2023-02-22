@@ -37,7 +37,7 @@ This command reads the requirements.txt file and installs the listed packages an
 ### Step 3
 
 Important input files to have inorder to run the full main.py pipline:
-1. 'input_file': "data/raw_data/sequencing_output_fastq/all_sequencing_output.fastq".
+1. 'input_file': "data/sequencing_output_fastq/all_sequencing_output.fastq".
    
    all_sequencing_output.fastq file contains all the sequences after combining all the sequencing output fastq files.  
 2. 'design_before_conversion_file': "data/raw_data/design/all_design_before_parse.fasta".
