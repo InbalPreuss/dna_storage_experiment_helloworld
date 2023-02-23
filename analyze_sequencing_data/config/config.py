@@ -1,20 +1,19 @@
 import itertools
 
+# Need to choose the algorithm approach you want to use to analyze the data
+algo_approachs = {
+    0: 'analyze_only_good_reads',
+    1: 'use_reads_with_len_bigger_then_y_and_u2_as_start_pos',
+    2: 'use_reads_with_len_bigger_then_y_and_use_all_u_for_pos'
+}
+
 
 def build_config():
-    shrink_dict_3_mer = {'AAT': 'X1',
-                         'ACA': 'X2',
-                         'ATG': 'X3',
-                         'AGC': 'X4',
-                         'TAA': 'X5',
-                         'TCT': 'X6',
-                         'TTC': 'X7',
-                         'TGG': 'X8'}
-
-    shrink_dict_size = len(shrink_dict_3_mer)
-
+    amount_of_payloads = 8
     subset_size = 4
     bits_per_z = 7
+
+    shrink_dict_size = amount_of_payloads
     k_mer_representative = itertools.combinations(['X' + str(i) for i in range(1, shrink_dict_size + 1)], subset_size)
     x_combinations = [set(k) for k in k_mer_representative]
     z = itertools.combinations(['Z' + str(i) for i in range(1, len(x_combinations) + 1)], 1)
@@ -24,14 +23,16 @@ def build_config():
     k_mer_representative = itertools.combinations(['X' + str(i) for i in range(1, shrink_dict_size + 1)], subset_size)
     k_mer_representative = list(k_mer_representative)[:2 ** bits_per_z]
     k_mer_representative_to_z = dict(zip(k_mer_representative, z))
-    z_to_k_mer_representative = dict(zip(z, k_mer_representative)) # Z1: {X1,X2,X3,X4}
+    z_to_k_mer_representative = dict(zip(z, k_mer_representative))  # Z1: {X1,X2,X3,X4}
 
     cycles_array = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"]
 
     config = {
+        # Need to choose the algorithm approach you want to use to analyze the data
+        'algo_approach': algo_approachs[1],
         'payload_pos': [150, 200, 250, 300, 350, 400, 450, 500],
         'amount_of_bc': 64,
-        'amount_of_payloads': 8,
+        'amount_of_payloads': amount_of_payloads,
         'amount_of_universals': 11,
         'design_len': 575,
         'payload_len': 25,
@@ -63,8 +64,8 @@ def build_config():
         'compare_design_to_experiment_results_output_file': "output/csv/compare_design_to_experiment_results.csv",
         'output_hist_folder': "output/graphs/hist/",
         'output_folder': "output/",
-        'general_information_file': "output/general_information.csv",
-        'count_reads_len_file': "output/count_reads_len.csv",
+        'general_information_file': "output/csv/general_information.csv",
+        'count_reads_len_file': "output/csv/count_reads_len.csv",
         'len_reads_hist_output_file': "output/graphs/hist/len_reads_hist.png",
         'output_graphs_folder': 'output/graphs/',
         'output_line_graphs_folder': 'output/graphs/line_graphs/',

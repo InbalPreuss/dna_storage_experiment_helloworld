@@ -64,7 +64,8 @@ class AnalyzeFastqData:
                  three_prime_len: int,
                  th_minimum_len_reads_to_analyse: int,
                  general_information_file: Union[Path, str],
-                 count_reads_len_file: Union[Path, str]
+                 count_reads_len_file: Union[Path, str],
+                 algo_approach: str
                  ):
         self.input_file = input_file
         self.const_design_file = const_design_file
@@ -109,6 +110,7 @@ class AnalyzeFastqData:
         self.design_results_only_z_file = design_results_only_z_file
         self.general_information_file = general_information_file
         self.count_reads_len_file = count_reads_len_file
+        self.algo_approach = algo_approach
 
     # Verify universal
 
@@ -256,7 +258,8 @@ class AnalyzeFastqData:
         uts.write_list_to_csv(
             ['most_frequency_value_in_reads:', most_common_length, 'appearances:', length_counts[most_common_length]],
             self.general_information_file)
-        uts.write_dict_to_csv(sorted_lengths, self.count_reads_len_file)
+        uts.write_list_to_csv(sorted_lengths, self.count_reads_len_file)
+
     def reads_len_hist(self, reads: List[str]) -> None:
         len_reads = len(reads)
         uts.write_list_to_csv(['# reads', len_reads], self.general_information_file)
@@ -294,7 +297,8 @@ class AnalyzeFastqData:
     def reads_results_to_csv(self, reads: List[str],
                              const_design: pd.DataFrame,
                              payload_design: pd.DataFrame,
-                             barcodes_design: pd.DataFrame) -> None:
+                             barcodes_design: pd.DataFrame,
+                             output_csv_path: Union[Path, str]) -> None:
         res = list()
         failed = 0
         read_idx = 0
@@ -337,8 +341,6 @@ class AnalyzeFastqData:
 
     def analyze_results_good_reads(self, input_csv_path: Union[Path, str],
                                    dict_to_csv: Union[Path, str]) -> Dict:
-        # read your csv to a dataframe
-
         df = pd.read_csv(input_csv_path)
         dict_bc = {}
 
@@ -458,7 +460,8 @@ class AnalyzeFastqData:
                 np.savetxt(f, cols, fmt='%s', delimiter=",")
 
     def create_heatmap_with_rectangles_on_most_common(self, dict_foreach_bc_and_x_count_all_cycles_matrix: Dict,
-                                                      heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str],
+                                                      heatmap_foreach_bc_and_x_count_with_most_common_file: Union[
+                                                          Path, str],
                                                       ax) -> None:
 
         # remove col 0 and row 0
@@ -505,7 +508,9 @@ class AnalyzeFastqData:
         plt.savefig(heatmap_foreach_bc_and_x_count_with_most_common_file, dpi=400)
         plt.close()
 
-    def heatmap_foreach_bc_and_x_count_with_most_common(self, heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str]) -> None:
+    def heatmap_foreach_bc_and_x_count_with_most_common(self,
+                                                        heatmap_foreach_bc_and_x_count_with_most_common_file: Union[
+                                                            Path, str]) -> None:
         df = pd.read_csv(self.foreach_bc_payload_count_file)
         dict_foreach_bc_and_x_count_str = df.to_dict("list")
 
@@ -546,14 +551,17 @@ class AnalyzeFastqData:
                          compare_design_to_experiment_results_output_file: Union[Path, str],
                          design_simulation_file: Union[Path, str],
                          heatmap_foreach_bc_and_x_count_with_most_common_file: Union[Path, str]) -> None:
-        dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path, dict_to_csv=foreach_bc_payload_count_file_dict_to_csv)
+        dict_bc = self.analyze_results_good_reads(input_csv_path=input_csv_path,
+                                                  dict_to_csv=foreach_bc_payload_count_file_dict_to_csv)
         self.most_common_for_each_bc(dict_bc=dict_bc, dict_to_csv_path=most_common_dict_to_csv_path)
-        result_payload, result_only_z = self.convert_most_common_to_letters_in_new_alphabet(results_most_common_file=most_common_dict_to_csv_path)
+        result_payload, result_only_z = self.convert_most_common_to_letters_in_new_alphabet(
+            results_most_common_file=most_common_dict_to_csv_path)
         self.compare_most_common_to_design(result_payload=result_payload,
                                            compare_design_to_experiment_results_output_file=compare_design_to_experiment_results_output_file,
                                            design_simulation_file=design_simulation_file)
 
-        self.heatmap_foreach_bc_and_x_count_with_most_common(heatmap_foreach_bc_and_x_count_with_most_common_file=heatmap_foreach_bc_and_x_count_with_most_common_file)
+        self.heatmap_foreach_bc_and_x_count_with_most_common(
+            heatmap_foreach_bc_and_x_count_with_most_common_file=heatmap_foreach_bc_and_x_count_with_most_common_file)
 
     def missing_bc_to_csv(self, dict_append_missing_bc):
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
@@ -600,7 +608,7 @@ class AnalyzeFastqData:
         count_sorted = counts.sort_index()
 
         dict_append_missing_bc = {}
-        for bc_idx in range(1, self.amount_of_bc+1):
+        for bc_idx in range(1, self.amount_of_bc + 1):
             if bc_idx not in count_sorted or count_sorted[bc_idx] == 0:
                 dict_append_missing_bc[bc_idx] = 0
 
@@ -646,6 +654,33 @@ class AnalyzeFastqData:
         self.hist_foreach_read_count_count_bc(csv_output_file=csv_output_file)
         self.hist_foreach_error_count_of_bc()
 
+    def analyze_data_with_the_chosen_approach(self, algo_approach: str,
+                                              reads: List[str],
+                                              const_design_pd: Union[TextFileReader, DataFrame],
+                                              payload_design_pd: Union[TextFileReader, DataFrame],
+                                              barcodes_design_pd: Union[TextFileReader, DataFrame], ) -> None:
+
+        # Only analyze reads with the good length, therefore all other reads are being ignored
+        if algo_approach == 'use_only_good_reads_with_correct_len':
+            # good reads with len 575
+            good_reads = self.retrieve_reads_in_specific_len(reads=reads, length=self.len_reads_to_retrieve)
+
+            # Write the good reads with len 575 to results_good_reads.csv
+            self.reads_results_to_csv(reads=good_reads,
+                                      const_design=const_design_pd,
+                                      payload_design=payload_design_pd,
+                                      barcodes_design=barcodes_design_pd,
+                                      output_csv_path=self.results_good_reads_file)
+        # 1. Use all reads with len bigger then some y
+        # 2. Extract the universal2 -> extract the rest of the seqs
+        elif algo_approach == 'use_reads_with_len_bigger_then_y_and_u2_as_start_pos':
+            self.extract_start_position_and_reads_results_to_csv(reads=reads,
+                                                                 const_design=const_design_pd,
+                                                                 payload_design=payload_design_pd,
+                                                                 barcodes_design=barcodes_design_pd,
+                                                                 dist_option='levenshtein',
+                                                                 output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+
     def create_folders(self) -> None:
         uts.is_dir_exists(self.output_hist_folder)
         uts.is_dir_exists(self.output_folder)
@@ -666,28 +701,13 @@ class AnalyzeFastqData:
         # reads len showed in histogram
         self.reads_len_hist(reads=reads)
 
-
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
 
-        if is_use_only_good_reads_with_correct_len:
-            # good reads with len 575
-            good_reads = self.retrieve_reads_in_specific_len(reads=reads, length=self.len_reads_to_retrieve)
-
-            # Write the good reads with len 575 to results_good_reads.csv
-            self.reads_results_to_csv(reads=good_reads,
-                                      const_design=const_design_pd,
-                                      payload_design=payload_design_pd,
-                                      barcodes_design=barcodes_design_pd,
-                                      output_csv_path=self.results_good_reads_file)
-        else:
-            # use reads with len bigger then some y
-            # extract the universal2 -> extract the rest of the seqs
-            self.extract_start_position_and_reads_results_to_csv(reads=reads,
-                                                                 const_design=const_design_pd,
-                                                                 payload_design=payload_design_pd,
-                                                                 barcodes_design=barcodes_design_pd,
-                                                                 dist_option='levenshtein',
-                                                                 output_csv_path=self.results_good_reads_with_len_bigger_then_y)
+        self.analyze_data_with_the_chosen_approach(algo_approach=self.algo_approach,
+                                                   reads=reads,
+                                                   const_design_pd=const_design_pd,
+                                                   payload_design_pd=payload_design_pd,
+                                                   barcodes_design_pd=barcodes_design_pd)
 
         # Find most common for each bc and for every cycle in that bc in results of good reads
         self.find_most_common(input_csv_path=input_csv_path,
@@ -698,7 +718,8 @@ class AnalyzeFastqData:
                               heatmap_foreach_bc_and_x_count_with_most_common_file=self.heatmap_foreach_bc_and_x_count_with_most_common_file)
 
         # For each bc count amount of reads sequenced
-        self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file, input_csv_path=input_csv_path)
+        self.for_each_bc_count_reads_read(csv_output_file=self.count_reads_for_each_bc_file,
+                                          input_csv_path=input_csv_path)
 
         # Create graph with sampling rate
         self.create_sampling_rate_from_good_reads_graph(input_csv_path=input_csv_path)
