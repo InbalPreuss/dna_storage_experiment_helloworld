@@ -40,7 +40,22 @@ class ConvertDesignToZ(AnalyzeFastqData):
                  k_mer_representative_to_z: Dict, payload_pos: List,
                  sampling_rate_from_good_reads_graph: Union[Path, str], output_line_graphs_folder: Union[Path, str],
                  cycles_array: List, bc_cycles_array: List, universal_len: int, payload_len: int, five_prime_len: int,
-                 three_prime_len: int, th_minimum_len_reads_to_analyse: int):
+                 three_prime_len: int, th_minimum_len_reads_to_analyse: int, design_folder: Union[Path, str], uni_start_pos: List,
+                 general_information_file: Union[Path, str],
+                 count_reads_len_file: Union[Path, str],
+                 algo_approach: str,
+                 output_fasta_folder: Union[Path, str],
+                 universals_fasta_format_file: Union[Path, str],
+                 reads_chunk_to_fasta_format_file: Union[Path, str],
+                 amount_of_universals: int,
+                 blast_database_folder: Union[Path, str],
+                 blast_db: Union[Path, str],
+                 is_sampling_rate: bool,
+                 sampling_rate_array: List,
+                 output_all_sampling_rate_folder: Union[Path, str],
+                 bc_list: List,
+                 amount_of_cycles: int
+                 ):
         super().__init__(
             input_file,
             const_design_file,
@@ -82,7 +97,24 @@ class ConvertDesignToZ(AnalyzeFastqData):
             payload_len,
             five_prime_len,
             three_prime_len,
-            th_minimum_len_reads_to_analyse
+            th_minimum_len_reads_to_analyse,
+            design_folder,
+            uni_start_pos,
+            general_information_file,
+            count_reads_len_file,
+            algo_approach,
+            output_fasta_folder,
+            universals_fasta_format_file,
+            reads_chunk_to_fasta_format_file,
+            amount_of_universals,
+            blast_database_folder,
+            blast_db,
+            is_sampling_rate,
+            sampling_rate_array,
+            output_all_sampling_rate_folder,
+            bc_list,
+            amount_of_cycles
+
         )
 
         self.design_most_common_dict_to_csv_path = design_most_common_dict_to_csv_path
@@ -132,6 +164,20 @@ class ConvertDesignToZ(AnalyzeFastqData):
         self.five_prime_len = five_prime_len
         self.th_minimum_len_reads_to_analyse = th_minimum_len_reads_to_analyse
         self.design_results_only_z_file = design_results_only_z_file
+        self.general_information_file = general_information_file
+        self.count_reads_len_file = count_reads_len_file
+        self.algo_approach = algo_approach
+        self.output_fasta_folder = output_fasta_folder
+        self.universals_fasta_format_file = universals_fasta_format_file
+        self.reads_chunk_to_fasta_format_file = reads_chunk_to_fasta_format_file
+        self.amount_of_universals = amount_of_universals
+        self.blast_database_folder = blast_database_folder
+        self.blast_db = blast_db
+        self.sampling_rate_array = sampling_rate_array
+        self.is_sampling_rate = is_sampling_rate
+        self.output_all_sampling_rate_folder = output_all_sampling_rate_folder
+        self.bc_list = bc_list
+        self.amount_of_cycles = amount_of_cycles
 
     def run(self):
         # upload design
@@ -149,6 +195,13 @@ class ConvertDesignToZ(AnalyzeFastqData):
                                                                          barcodes_design=barcodes_design_pd,
                                                                          dist_option='levenshtein',
                                                                          output_csv_path=self.design_results_as_x_file)
+        # number_of_reads, is_run_loop, reads_length_counts, blast_database_name = AnalyzeFastqData.prepare_run_extract_all_pos_and_reads_results_to_csv(self=self,
+        #         output_csv_path=self.design_before_conversion_file)
+        # AnalyzeFastqData.analyze_data_with_the_chosen_approach(self=self,
+        #                                                        algo_approach=self.algo_approach,
+        #                                                        const_design_pd=const_design_pd,
+        #                                                        payload_design_pd=payload_design_pd,
+        #                                                        barcodes_design_pd=barcodes_design_pd)
         self.find_most_common_convert_to_z(input_csv_path=self.design_results_as_x_file,
                                            foreach_bc_payload_count_file_dict_to_csv=self.design_foreach_bc_payload_count_file_dict_to_csv,
                                            most_common_dict_to_csv_path=self.design_most_common_dict_to_csv_path)

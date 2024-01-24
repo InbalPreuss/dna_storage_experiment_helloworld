@@ -1,3 +1,6 @@
+import time
+
+import utilities.utilities as uts
 from analyze_sequencing_data.config import config
 from analyze_sequencing_data.analyze_fastq import AnalyzeFastqData
 from analyze_sequencing_data.analyse_library_sequences import AnalyzeLibrarySeqs
@@ -6,14 +9,14 @@ from analyze_sequencing_data.convert_design_file_to_z import ConvertDesignToZ
 if __name__ == '__main__':
     # Analyze fastq results from sequencing
     config = config.build_config()
-
+    #
     # convert_design_file_to_z = ConvertDesignToZ(design_before_conversion_file=config['design_before_conversion_file'],
     #                                             design_results_as_z_file=config['design_results_as_z_file'],
     #                                             design_results_only_z_file=config['design_results_only_z_file'],
     #                                             design_results_as_x_file=config['design_results_as_x_file'],
     #                                             design_foreach_bc_payload_count_file_dict_to_csv=config['design_foreach_bc_payload_count_file_dict_to_csv'],
     #                                             design_most_common_dict_to_csv_path=config['design_most_common_dict_to_csv_path'],
-    #                                             input_file=config['input_file'],
+    #                                             input_file=config['input_file_or_folder'],
     #                                             const_design_file=config['const_design_file'],
     #                                             payload_design_file=config['payload_design_file'],
     #                                             barcodes_design_file=config['barcodes_design_file'],
@@ -31,6 +34,7 @@ if __name__ == '__main__':
     #                                             missing_bcs_file=config['missing_bcs_file'],
     #                                             output_hist_folder=config['output_hist_folder'],
     #                                             output_folder=config['output_folder'],
+    #                                             design_folder=config['design_folder'],
     #                                             output_graphs_folder=config['output_graphs_folder'],
     #                                             output_csv_folder=config['output_csv_folder'],
     #                                             output_heatmap_folder=config['output_heatmap_folder'],
@@ -49,6 +53,7 @@ if __name__ == '__main__':
     #                                             z_to_k_mer_representative=config['z_to_k_mer_representative'],
     #                                             k_mer_representative_to_z=config['k_mer_representative_to_z'],
     #                                             payload_pos=config['payload_pos'],
+    #                                             uni_start_pos=config['uni_start_pos'],
     #                                             sampling_rate_from_good_reads_graph=config[
     #                                                 'sampling_rate_from_good_reads_graph'],
     #                                             output_line_graphs_folder=config['output_line_graphs_folder'],
@@ -58,12 +63,27 @@ if __name__ == '__main__':
     #                                             universal_len=config['universal_len'],
     #                                             five_prime_len=config['five_prime_len'],
     #                                             three_prime_len=config['three_prime_len'],
-    #                                             th_minimum_len_reads_to_analyse=config['th_minimum_len_reads_to_analyse']
+    #                                             th_minimum_len_reads_to_analyse=config['th_minimum_len_reads_to_analyse'],
+    #                                             general_information_file = config['general_information_file'],
+    #                                             count_reads_len_file = config['count_reads_len_file'],
+    #                                             algo_approach = config['algo_approach'],
+    #                                             output_fasta_folder = config['output_fasta_folder'],
+    #                                             universals_fasta_format_file = config['universals_fasta_format_file'],
+    #                                             reads_chunk_to_fasta_format_file = config['reads_chunk_to_fasta_format_file'],
+    #                                             amount_of_universals = config['amount_of_universals'],
+    #                                             blast_database_folder = config['blast_database_folder'],
+    #                                             blast_db = config['blast_db'],
+    #                                             sampling_rate_array = config['sampling_rate_array'],
+    #                                             is_sampling_rate = config['is_sampling_rate'],
+    #                                             output_all_sampling_rate_folder = config['output_all_sampling_rate_folder'],
+    #                                             bc_list=config['bc_list'],
+    #                                             amount_of_cycles=config['amount_of_cycles']
     #                                             )
     # convert_design_file_to_z.run()
 
     # Fastq analysis
-    analyze_fastq_data = AnalyzeFastqData(input_file=config['input_file'],
+    # TODO: Whenever added a param here, add it also in ConvertDesignToZ
+    analyze_fastq_data = AnalyzeFastqData(input_file_or_folder=config['input_file_or_folder'],
                                           const_design_file=config['const_design_file'],
                                           payload_design_file=config['payload_design_file'],
                                           barcodes_design_file=config['barcodes_design_file'],
@@ -83,6 +103,7 @@ if __name__ == '__main__':
                                           missing_bcs_file=config['missing_bcs_file'],
                                           output_hist_folder=config['output_hist_folder'],
                                           output_folder=config['output_folder'],
+                                          design_folder=config['design_folder'],
                                           output_graphs_folder=config['output_graphs_folder'],
                                           output_csv_folder=config['output_csv_folder'],
                                           output_heatmap_folder=config['output_heatmap_folder'],
@@ -100,6 +121,7 @@ if __name__ == '__main__':
                                           z_to_k_mer_representative=config['z_to_k_mer_representative'],
                                           k_mer_representative_to_z=config['k_mer_representative_to_z'],
                                           payload_pos=config['payload_pos'],
+                                          uni_start_pos=config['uni_start_pos'],
                                           sampling_rate_from_good_reads_graph=config[
                                               'sampling_rate_from_good_reads_graph'],
                                           output_line_graphs_folder=config['output_line_graphs_folder'],
@@ -112,9 +134,26 @@ if __name__ == '__main__':
                                           th_minimum_len_reads_to_analyse=config['th_minimum_len_reads_to_analyse'],
                                           general_information_file=config['general_information_file'],
                                           count_reads_len_file=config['count_reads_len_file'],
-                                          algo_approach=config['algo_approach']
+                                          algo_approach=config['algo_approach'],
+                                          output_fasta_folder=config['output_fasta_folder'],
+                                          universals_fasta_format_file=config['universals_fasta_format_file'],
+                                          reads_chunk_to_fasta_format_file=config['reads_chunk_to_fasta_format_file'],
+                                          amount_of_universals=config['amount_of_universals'],
+                                          blast_database_folder=config['blast_database_folder'],
+                                          blast_db=config['blast_db'],
+                                          sampling_rate_array=config['sampling_rate_array'],
+                                          is_sampling_rate=config['is_sampling_rate'],
+                                          output_all_sampling_rate_folder=config['output_all_sampling_rate_folder'],
+                                          bc_list=config['bc_list'],
+                                          amount_of_cycles=config['amount_of_cycles']
                                           )
+    start_time = time.time()
+    # run #
     analyze_fastq_data.run()
+
+    end_time = time.time()
+    total_time = float(end_time - start_time)/60
+    uts.write_list_to_csv(['Total time:', total_time, 'min'], config['general_information_file'])
 
     # analyze_library_seqs = AnalyzeLibrarySeqs(motif_analysis_folder=config['motif_analysis_folder'],
     #                                           motif_analysis_csv_folder=config['motif_analysis_csv_folder'],
