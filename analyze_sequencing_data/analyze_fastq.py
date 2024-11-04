@@ -1098,10 +1098,7 @@ class AnalyzeFastqData:
         self.missing_bc_to_csv(dict_append_missing_bc)
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
         if len(dict_append_missing_bc) != 0:
-            try:
-                count_sorted = pd.concat([count_sorted, ser_append_missing_bc])
-            except:
-                print(ser_append_missing_bc)
+            count_sorted = pd.concat([count_sorted, ser_append_missing_bc])
         count_sorted_with_missing_bc = count_sorted.sort_index()
         count_sorted_with_missing_bc.to_csv(output_file, mode='a', header=False)
 
