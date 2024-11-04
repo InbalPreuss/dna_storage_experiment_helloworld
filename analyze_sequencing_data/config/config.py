@@ -44,8 +44,9 @@ def build_config():
         'subset_size': subset_size,
         'th_minimum_len_reads_to_analyse': 50,
         'is_sampling_rate': True,
-        'sampling_rate_array': [100, 50, 30, 20, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001],
-        'bc_list': [1, 2,3,4,5,6,7,8],
+        # 'sampling_rate_array': [100, 50, 30, 20, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001],
+        'sampling_rate_array': [100, 50, 30, 20, 10, 5, 1, 0.5], #TODO: uncomment this line
+        'bc_list': [1,2,3,4,5,6,7,8],
         'k_mer_representative_to_z': k_mer_representative_to_z,
         'z_to_k_mer_representative': z_to_k_mer_representative,
         "cycles_array": cycles_array,

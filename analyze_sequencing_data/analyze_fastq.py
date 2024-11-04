@@ -153,6 +153,7 @@ class AnalyzeFastqData:
     def run(self):
         self.create_folders()
 
+        # TODO: uncomment
         # upload design
         const_design_pd, payload_design_pd, barcodes_design_pd = self.upload_design()
 
@@ -162,11 +163,11 @@ class AnalyzeFastqData:
                                                    barcodes_design_pd=barcodes_design_pd)
 
         input_csv_path = self.results_good_reads_with_len_bigger_then_y
-        # input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate\\output_100\\csv\\results_good_reads_with_len_bigger_then_y.csv'
+        # input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate\\output_100\\iter_0\\csv\\results_good_reads_with_len_bigger_then_y.csv'
         for sampling_percentage in self.sampling_rate_array:
             for iteration in range(10):
-                # if sampling_percentage == 100:
-                #     input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
+                if sampling_percentage == 100:
+                    input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
                 #     continue
                 if sampling_percentage != 100:
                     input_csv_path = self.create_new_input_csv_according_to_sampling_rate(sampling_rate=sampling_percentage,
@@ -190,10 +191,11 @@ class AnalyzeFastqData:
                 # Move the data into the designated folder for each sampling rate
                 output_folder = self.save_output_into_separate_folder(sampling_percentage=sampling_percentage, iteration=iteration)
                 if sampling_percentage == 100:
-                    input_csv_path_sampling_percentage_100 = output_folder + '/csv/results_good_reads_with_len_bigger_then_y.csv'
+                    # input_csv_path_sampling_percentage_100 = output_folder + '/csv/results_good_reads_with_len_bigger_then_y.csv'
+                    input_csv_path = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
 
-            # Delete all csvs from the output folder
-            self.delete_csv_files_from_folder()
+                # Delete all csvs from the output folder
+                self.delete_csv_files_from_folder()
 
         self.graph_of_all_sampling_most_common_x_to_each_bc()
 
@@ -225,7 +227,7 @@ class AnalyzeFastqData:
     def identify_oligo_by_pos_universals(self, read: SeqIO, payload_design: pd.DataFrame, barcodes_design: pd.DataFrame,
                                          uni_pos_list: list, dist_option='hamming') -> List[int]:
         # identify_barcode
-        # u2 location - bc len
+        # u1 location - bc len
         oligo_start_pos = uni_pos_list[0] - self.barcode_len
         bc = self.identify_barcode(read=read, barcodes_design=barcodes_design, oligo_start_pos=oligo_start_pos,
                                    dist_option=dist_option)
@@ -1095,7 +1097,11 @@ class AnalyzeFastqData:
 
         self.missing_bc_to_csv(dict_append_missing_bc)
         ser_append_missing_bc = pd.Series(dict_append_missing_bc)
-        count_sorted = count_sorted.append(ser_append_missing_bc)
+        if len(dict_append_missing_bc) != 0:
+            try:
+                count_sorted = pd.concat([count_sorted, ser_append_missing_bc])
+            except:
+                print(ser_append_missing_bc)
         count_sorted_with_missing_bc = count_sorted.sort_index()
         count_sorted_with_missing_bc.to_csv(output_file, mode='a', header=False)
 
@@ -1403,6 +1409,8 @@ class AnalyzeFastqData:
             data[sampling_percentage] = []
 
             # Determine the number of elements in each iteration (assuming equal for all iterations)
+            print(iterations_data)
+            print(sampling_percentage)
             num_elements = len(
                 iterations_data[next(iter(iterations_data))])  # Get the length of one of the iteration lists
 
