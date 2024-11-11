@@ -1,5 +1,6 @@
 import ast
 import collections
+import glob
 import heapq
 import os
 import shutil
@@ -161,43 +162,45 @@ class AnalyzeFastqData:
                                                    const_design_pd=const_design_pd,
                                                    payload_design_pd=payload_design_pd,
                                                    barcodes_design_pd=barcodes_design_pd)
+        #
+        # input_csv_path = self.results_good_reads_with_len_bigger_then_y
+        # # input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate\\output_100\\iter_0\\csv\\results_good_reads_with_len_bigger_then_y.csv'
+        # for sampling_percentage in self.sampling_rate_array:
+        #     for iteration in range(10):
+        #         if sampling_percentage == 100:
+        #             input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
+        #         #     continue
+        #         if sampling_percentage != 100:
+        #             input_csv_path = self.create_new_input_csv_according_to_sampling_rate(sampling_rate=sampling_percentage,
+        #                                                                                   input_csv_path=input_csv_path_sampling_percentage_100,
+        #                                                                                   iteration=iteration)
+        #         # Find most common for each bc and for every cycle in that bc in results of good reads
+        #         self.find_most_common(input_csv_path=input_csv_path,
+        #                               foreach_bc_payload_count_file_dict_to_csv=self.foreach_bc_payload_count_file,
+        #                               most_common_dict_to_csv_path=self.results_most_common_file,
+        #                               compare_design_to_experiment_results_output_file=self.compare_design_to_experiment_results_output_file,
+        #                               design_simulation_file=self.design_simulation_file,
+        #                               heatmap_foreach_bc_and_x_count_with_most_common_file=self.heatmap_foreach_bc_and_x_count_with_most_common_file)
+        #
+        #         # For each bc count amount of reads sequenced
+        #         self.hist_reads(csv_output_file=self.count_reads_for_each_bc_file,
+        #                         input_csv_path=input_csv_path)
+        #
+        #         # Create graph with sampling rate
+        #         self.create_sampling_rate_from_good_reads_graph(input_csv_path=input_csv_path)
+        #
+        #         # Move the data into the designated folder for each sampling rate
+        #         output_folder = self.save_output_into_separate_folder(sampling_percentage=sampling_percentage, iteration=iteration)
+        #         if sampling_percentage == 100:
+        #             # input_csv_path_sampling_percentage_100 = output_folder + '/csv/results_good_reads_with_len_bigger_then_y.csv'
+        #             input_csv_path = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
+        #
+        #         # Delete all csvs from the output folder
+        #         self.delete_csv_files_from_folder()
+        #
+        # self.graph_of_all_sampling_most_common_x_to_each_bc()
 
-        input_csv_path = self.results_good_reads_with_len_bigger_then_y
-        # input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate\\output_100\\iter_0\\csv\\results_good_reads_with_len_bigger_then_y.csv'
-        for sampling_percentage in self.sampling_rate_array:
-            for iteration in range(10):
-                if sampling_percentage == 100:
-                    input_csv_path_sampling_percentage_100 = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
-                #     continue
-                if sampling_percentage != 100:
-                    input_csv_path = self.create_new_input_csv_according_to_sampling_rate(sampling_rate=sampling_percentage,
-                                                                                          input_csv_path=input_csv_path_sampling_percentage_100,
-                                                                                          iteration=iteration)
-                # Find most common for each bc and for every cycle in that bc in results of good reads
-                self.find_most_common(input_csv_path=input_csv_path,
-                                      foreach_bc_payload_count_file_dict_to_csv=self.foreach_bc_payload_count_file,
-                                      most_common_dict_to_csv_path=self.results_most_common_file,
-                                      compare_design_to_experiment_results_output_file=self.compare_design_to_experiment_results_output_file,
-                                      design_simulation_file=self.design_simulation_file,
-                                      heatmap_foreach_bc_and_x_count_with_most_common_file=self.heatmap_foreach_bc_and_x_count_with_most_common_file)
-
-                # For each bc count amount of reads sequenced
-                self.hist_reads(csv_output_file=self.count_reads_for_each_bc_file,
-                                input_csv_path=input_csv_path)
-
-                # Create graph with sampling rate
-                self.create_sampling_rate_from_good_reads_graph(input_csv_path=input_csv_path)
-
-                # Move the data into the designated folder for each sampling rate
-                output_folder = self.save_output_into_separate_folder(sampling_percentage=sampling_percentage, iteration=iteration)
-                if sampling_percentage == 100:
-                    # input_csv_path_sampling_percentage_100 = output_folder + '/csv/results_good_reads_with_len_bigger_then_y.csv'
-                    input_csv_path = 'output_all_sampling_rate/output_100/iter_0/csv/results_good_reads_with_len_bigger_then_y.csv'
-
-                # Delete all csvs from the output folder
-                self.delete_csv_files_from_folder()
-
-        self.graph_of_all_sampling_most_common_x_to_each_bc()
+        self.graph_of_all_blast_columns(cols_index=[6])
 
     ''' 
     identify_payload_by_pos_universals
@@ -650,66 +653,66 @@ class AnalyzeFastqData:
                                                  dist_option, output_csv_path, number_of_reads, is_run_loop,
                                                  reads_length_counts, blast_database_name):
 
-        chunk_size = 1000
-        chunk_end = chunk_size
-        reads_chunk_i = 1
-        res = list()
-        failed = 0
-
-        number_of_reads += uts.get_amount_of_reads_from_file(file_path=self.input_file_or_folder)
-        uts.write_list_to_csv(['# reads', number_of_reads], self.general_information_file)
-
-        reads_iter = uts.open_fastq_yield(self.input_file_or_folder)
-
-        ''' Usning blastn to analyze the reads '''
-        while is_run_loop:
-            if number_of_reads < chunk_end:
-                chunk_size = number_of_reads % chunk_size
-                is_run_loop = False
-            print(chunk_size)
-            reads_chunk = list(itertools.islice(reads_iter, chunk_size))
-            reads_specific_len, reads_length_counts = self.retrieve_reads_in_specific_len_at_least_dict(
-                reads=reads_chunk,
-                length=self.th_minimum_len_reads_to_analyse, reads_length_counts=reads_length_counts)
-            if len(reads_specific_len) == 0:
-                if not is_run_loop:
-                    break
-                chunk_end += chunk_size
-                reads_chunk_i += 1
-                continue
-            fasta_chunk_idx = chunk_end - (chunk_end - (reads_chunk_i * chunk_size)) + chunk_size
-            output_fasta_file = self.reads_chunk_to_fasta_format(reads=reads_specific_len, idx=fasta_chunk_idx)
-
-            query_results = self.run_blastn_to_find_location_of_universals_in_reads_chunks(reads_chunk_i=reads_chunk_i,
-                                                                                           blast_database_name=blast_database_name,
-                                                                                           output_fasta_file=output_fasta_file)
-
-            for read_idx, (read_id, unis_pos_in_read) in enumerate(query_results.items()):
-                read = reads_specific_len[read_id]
-                uni_pos_list = self.find_pos_in_read_list(unis_pos_in_read=unis_pos_in_read)
-
-                res.append(self.identify_oligo_by_pos_universals(read=read,
-                                                                 payload_design=payload_design,
-                                                                 barcodes_design=barcodes_design,
-                                                                 uni_pos_list=uni_pos_list,
-                                                                 dist_option=dist_option))
-                if res[-1].__contains__(0):
-                    failed += 1
-
-            uts.write_list_to_csv(
-                ['processed reads:', chunk_end, 'failed reads:', failed, str(100 * failed / (chunk_end + 1)) + '%',
-                 'failed.', 'query_results: ', len(query_results)],
-                self.general_information_file)
-            with open(output_csv_path, "ab") as f:
-                np.savetxt(f, res, fmt='%i', delimiter=",")
-            res = list()
-
-            if not is_run_loop:
-                break
-            chunk_end += chunk_size
-            reads_chunk_i += 1
-
-        uts.write_dict_to_csv_as_dict(reads_length_counts, self.count_reads_len_file)
+        # chunk_size = 1000
+        # chunk_end = chunk_size
+        # reads_chunk_i = 1
+        # res = list()
+        # failed = 0
+        #
+        # number_of_reads += uts.get_amount_of_reads_from_file(file_path=self.input_file_or_folder)
+        # uts.write_list_to_csv(['# reads', number_of_reads], self.general_information_file)
+        #
+        # reads_iter = uts.open_fastq_yield(self.input_file_or_folder)
+        #
+        # ''' Usning blastn to analyze the reads '''
+        # while is_run_loop:
+        #     if number_of_reads < chunk_end:
+        #         chunk_size = number_of_reads % chunk_size
+        #         is_run_loop = False
+        #     print(chunk_size)
+        #     reads_chunk = list(itertools.islice(reads_iter, chunk_size))
+        #     reads_specific_len, reads_length_counts = self.retrieve_reads_in_specific_len_at_least_dict(
+        #         reads=reads_chunk,
+        #         length=self.th_minimum_len_reads_to_analyse, reads_length_counts=reads_length_counts)
+        #     if len(reads_specific_len) == 0:
+        #         if not is_run_loop:
+        #             break
+        #         chunk_end += chunk_size
+        #         reads_chunk_i += 1
+        #         continue
+        #     fasta_chunk_idx = chunk_end - (chunk_end - (reads_chunk_i * chunk_size)) + chunk_size
+        #     output_fasta_file = self.reads_chunk_to_fasta_format(reads=reads_specific_len, idx=fasta_chunk_idx)
+        #
+        #     query_results = self.run_blastn_to_find_location_of_universals_in_reads_chunks(reads_chunk_i=reads_chunk_i,
+        #                                                                                    blast_database_name=blast_database_name,
+        #                                                                                    output_fasta_file=output_fasta_file)
+        #
+        #     for read_idx, (read_id, unis_pos_in_read) in enumerate(query_results.items()):
+        #         read = reads_specific_len[read_id]
+        #         uni_pos_list = self.find_pos_in_read_list(unis_pos_in_read=unis_pos_in_read)
+        #
+        #         res.append(self.identify_oligo_by_pos_universals(read=read,
+        #                                                          payload_design=payload_design,
+        #                                                          barcodes_design=barcodes_design,
+        #                                                          uni_pos_list=uni_pos_list,
+        #                                                          dist_option=dist_option))
+        #         if res[-1].__contains__(0):
+        #             failed += 1
+        #
+        #     uts.write_list_to_csv(
+        #         ['processed reads:', chunk_end, 'failed reads:', failed, str(100 * failed / (chunk_end + 1)) + '%',
+        #          'failed.', 'query_results: ', len(query_results)],
+        #         self.general_information_file)
+        #     with open(output_csv_path, "ab") as f:
+        #         np.savetxt(f, res, fmt='%i', delimiter=",")
+        #     res = list()
+        #
+        #     if not is_run_loop:
+        #         break
+        #     chunk_end += chunk_size
+        #     reads_chunk_i += 1
+        #
+        # uts.write_dict_to_csv_as_dict(reads_length_counts, self.count_reads_len_file)
         self.hist_length_counts_reads()
 
     def most_frequency_value_in_reads(self, lens: List[int]) -> None:
@@ -1172,9 +1175,23 @@ class AnalyzeFastqData:
 
         df_count_reads_len = pd.read_csv(self.count_reads_len_file)
         plt.bar(df_count_reads_len['length'], df_count_reads_len['count'])
-        plt.xlabel('length')
-        plt.ylabel('# reads')
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.xlabel('Length', fontsize=14)
+        plt.ylabel('# Reads', fontsize=14)
         plt.savefig(self.len_reads_hist_output_file)
+        plt.close()
+
+
+        df_count_reads_len = pd.read_csv(self.count_reads_len_file)
+        filtered_df = df_count_reads_len[
+            df_count_reads_len['length'] < 400]  # Filtering to keep only lengths less than 1000
+        plt.bar(filtered_df['length'], filtered_df['count'])
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.xlabel('Length', fontsize=14)
+        plt.ylabel('# Reads', fontsize=14)
+        plt.savefig(f'{self.len_reads_hist_output_file}, len_less_than_400.svg')
         plt.close()
 
         # most frequency value in reads
@@ -1479,21 +1496,58 @@ class AnalyzeFastqData:
             plt.boxplot(flattened_data)
             sorted_keys_xticks_str_arr = [str(round(element,2)) for element in sorted_keys]
             positions = range(1, len(sorted_keys) + 1)
-            plt.xticks(positions, sorted_keys_xticks_str_arr, rotation=45)
+            plt.xticks(positions, sorted_keys_xticks_str_arr, rotation=45, fontsize=14)
 
 
         # plt.ylim(-0.5, 4.5)
-        plt.ylabel('Number Of Observed $s_i$')
+        plt.ylabel('Number Of Observed $X_i$', fontsize=16)
         # plt.title('Saturation Analysis of Design X and Experiment Results X')
         plt.subplots_adjust(bottom=0.2)
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
         if x_axis_type == 'sampling_rate':
             plt.xlabel('Sampling Percentage')
             plt.savefig(self.output_line_graphs_folder + 'sampling_rate_' + graph_type + '.svg')
         elif x_axis_type == 'bc_avg_coverage':
-            plt.xlabel('Average Reads Per Strand')
+            plt.xlabel('Average Reads Per Strand', fontsize=16)
             plt.savefig(self.output_line_graphs_folder + 'bc_avg_coverage_' + graph_type + '.svg')
         plt.show()
         plt.close()
         x=4
+
+    def graph_of_all_blast_columns(self, cols_index: List[int]) -> None:
+        START_POS_RANGE = 500
+
+        # Use glob to find all files in the directory that match the pattern
+        file_pattern = os.path.join(self.blast_database_folder, "blastn_output_*")
+
+        # Initialize a list to store all column 6 data
+        start_of_alignment_values = []
+
+        for col_idx in cols_index:
+            # Iterate over each file in the directory matching the pattern
+            for file_path in glob.glob(file_pattern):
+                # Open the file and read lines
+                with open(file_path, 'r') as file:
+                    for line in file:
+                        fields = line.strip().split('\t')
+                        # Make sure the line is not empty and has enough fields
+                        if len(fields) > col_idx:
+                            try:
+                                # Append the value from column 6 (convert to int)
+                                start_of_alignment_values.append(int(fields[col_idx]))
+                            except ValueError:
+                                # Handle the case where conversion to int fails
+                                continue
+
+            # Plotting the histogram of the start of alignment values
+            plt.figure(figsize=(10, 6))
+            plt.hist(start_of_alignment_values[:START_POS_RANGE], bins=50)
+            plt.title(f'Histogram of Start of Alignment in Read 0-{START_POS_RANGE}')
+            plt.xlabel('Start of Alignment in Read')
+            plt.ylabel('Frequency')
+            plt.grid(True)
+            plt.savefig(self.output_hist_folder + f'hist_start_of_alignment_col_{col_idx}_0_{START_POS_RANGE}.svg')
+
 
 
