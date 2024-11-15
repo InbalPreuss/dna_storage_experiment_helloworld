@@ -25,7 +25,7 @@ import csv
 import subprocess
 import itertools
 import re
-
+from collections import Counter
 import utilities.utilities as uts
 
 
@@ -198,7 +198,7 @@ class AnalyzeFastqData:
         #         # Delete all csvs from the output folder
         #         self.delete_csv_files_from_folder()
         #
-        # self.graph_of_all_sampling_most_common_x_to_each_bc()
+        self.graph_of_all_sampling_most_common_x_to_each_bc()
 
         self.graph_of_all_blast_columns(cols_index=[6])
 
@@ -713,7 +713,8 @@ class AnalyzeFastqData:
         #     reads_chunk_i += 1
         #
         # uts.write_dict_to_csv_as_dict(reads_length_counts, self.count_reads_len_file)
-        self.hist_length_counts_reads()
+        # self.hist_length_counts_reads()
+        self.plot_read_length_histogram(self.input_file_or_folder)
 
     def most_frequency_value_in_reads(self, lens: List[int]) -> None:
         length_counts = {}
@@ -1174,11 +1175,12 @@ class AnalyzeFastqData:
     def hist_length_counts_reads(self):
 
         df_count_reads_len = pd.read_csv(self.count_reads_len_file)
+        plt.figure(figsize=(14, 10))
         plt.bar(df_count_reads_len['length'], df_count_reads_len['count'])
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.xlabel('Length', fontsize=14)
-        plt.ylabel('# Reads', fontsize=14)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.xlabel('Length', fontsize=35)
+        plt.ylabel('# Reads', fontsize=35)
         plt.savefig(self.len_reads_hist_output_file)
         plt.close()
 
@@ -1186,11 +1188,12 @@ class AnalyzeFastqData:
         df_count_reads_len = pd.read_csv(self.count_reads_len_file)
         filtered_df = df_count_reads_len[
             df_count_reads_len['length'] < 400]  # Filtering to keep only lengths less than 1000
+        plt.figure(figsize=(14, 10))
         plt.bar(filtered_df['length'], filtered_df['count'])
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.xlabel('Length', fontsize=14)
-        plt.ylabel('# Reads', fontsize=14)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.xlabel('Length', fontsize=35)
+        plt.ylabel('# Reads', fontsize=35)
         plt.savefig(f'{self.len_reads_hist_output_file}, len_less_than_400.svg')
         plt.close()
 
@@ -1397,10 +1400,10 @@ class AnalyzeFastqData:
 
                                 all_results_count[sampling_percentage][iteration_folder].append(x_count_to_each_bc)
 
-        self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='errorbar', x_axis_type='sampling_rate')
-        self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='boxplot', x_axis_type='sampling_rate')
+        # self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='errorbar', x_axis_type='sampling_rate')
+        # self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='boxplot', x_axis_type='sampling_rate')
         self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='errorbar', x_axis_type='bc_avg_coverage')
-        self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='boxplot', x_axis_type='bc_avg_coverage')
+        # self.create_graph_avg_x_to_each_sampling(all_counts=all_results_count, graph_type='boxplot', x_axis_type='bc_avg_coverage')
 
     def compare_amount_of_x_to_design(self, set_most_common_x_to_each_bc, z):
         z_to_x_tuple = self.z_to_k_mer_representative[z]
@@ -1509,14 +1512,16 @@ class AnalyzeFastqData:
             plt.xlabel('Sampling Percentage')
             plt.savefig(self.output_line_graphs_folder + 'sampling_rate_' + graph_type + '.svg')
         elif x_axis_type == 'bc_avg_coverage':
-            plt.xlabel('Average Reads Per Strand', fontsize=16)
+            plt.xlabel('Average Reads Per Sequence', fontsize=16)
             plt.savefig(self.output_line_graphs_folder + 'bc_avg_coverage_' + graph_type + '.svg')
         plt.show()
         plt.close()
         x=4
 
     def graph_of_all_blast_columns(self, cols_index: List[int]) -> None:
-        START_POS_RANGE = 500
+        START_POS_RANGE_FROM = 0
+        START_POS_RANGE_TO = 300
+        UNIVERSAL_START_POS = 25
 
         # Use glob to find all files in the directory that match the pattern
         file_pattern = os.path.join(self.blast_database_folder, "blastn_output_*")
@@ -1540,14 +1545,76 @@ class AnalyzeFastqData:
                                 # Handle the case where conversion to int fails
                                 continue
 
+            start_of_alignment_values_filtered = [value for value in start_of_alignment_values if START_POS_RANGE_FROM <= value <= START_POS_RANGE_TO]
+
             # Plotting the histogram of the start of alignment values
-            plt.figure(figsize=(10, 6))
-            plt.hist(start_of_alignment_values[:START_POS_RANGE], bins=50)
-            plt.title(f'Histogram of Start of Alignment in Read 0-{START_POS_RANGE}')
-            plt.xlabel('Start of Alignment in Read')
-            plt.ylabel('Frequency')
+            plt.figure(figsize=(12, 8))
+            plt.axvline(UNIVERSAL_START_POS, color='red', linestyle='--', linewidth=2,
+                        label=f'Universal Start Pos ({UNIVERSAL_START_POS})')
+            plt.hist(start_of_alignment_values_filtered, bins=70)
+            plt.xticks(fontsize=25)
+            plt.yticks(fontsize=25)
+            # plt.title(f'Histogram of Start of Alignment in Read 0-{START_POS_RANGE}')
+            plt.xlabel('U1 Start Position', fontsize=30)
+            plt.ylabel('Frequency', fontsize=30)
             plt.grid(True)
-            plt.savefig(self.output_hist_folder + f'hist_start_of_alignment_col_{col_idx}_0_{START_POS_RANGE}.svg')
+            plt.savefig(self.output_hist_folder + f'hist_start_of_alignment_col_{col_idx}_{START_POS_RANGE_FROM}_{START_POS_RANGE_TO}.svg')
 
+    import matplotlib.pyplot as plt
+    from collections import Counter
 
+    def read_fastq(self, file_path):
+        """Generator function to read a FASTQ file and yield read lengths."""
+        with open(file_path, 'r') as file:
+            while True:
+                header = file.readline()  # @SEQ_ID
+                if not header:
+                    break
+                seq = file.readline().strip()  # The actual sequence
+                file.readline()  # +
+                file.readline()  # Quality line
+                yield len(seq)
 
+    def get_all_fastq_files(self,input_path):
+        """Retrieve a list of FASTQ files from a folder or single file."""
+        if os.path.isfile(input_path):
+            return [input_path]  # Single file
+        elif os.path.isdir(input_path):
+            # Get all .fastq files in the folder
+            return [os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith('.fastq')]
+        else:
+            raise ValueError(f"Invalid input: {input_path} is neither a file nor a folder.")
+
+    def plot_read_length_histogram(self, input_path):
+        """Generate a histogram of read lengths from one or more FASTQ files."""
+        START_POS_RANGE_FROM = 0
+        START_POS_RANGE_TO = 400
+
+        fastq_files = self.get_all_fastq_files(input_path)
+        read_lengths = Counter()  # Initialize a counter for all lengths
+
+        for file_path in fastq_files:
+            print(f"Processing {file_path}...")
+            read_lengths.update(self.read_fastq(file_path))  # Aggregate read lengths
+
+        # Filter lengths within the specified range
+        filtered_lengths = {length: count for length, count in read_lengths.items() if
+                            START_POS_RANGE_FROM <= length <= START_POS_RANGE_TO}
+
+        # Separate lengths and counts for the histogram
+        lengths = list(filtered_lengths.keys())
+        counts = list(filtered_lengths.values())
+
+        # Create the histogram
+        plt.figure(figsize=(10, 7))
+        plt.bar(lengths, counts, width=1.0)
+        # plt.title(f"Read Length Distribution ({START_POS_RANGE_FROM}-{START_POS_RANGE_TO}) Across All Files")
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.xlabel("Read Length", fontsize=25)
+        plt.ylabel("Number of Reads", fontsize=25)
+        # Add a red vertical line at UNIVERSAL_START_POS
+        plt.axvline(self.th_minimum_len_reads_to_analyse, color='red', linestyle='--', linewidth=2)
+        plt.grid(axis="y", linestyle="--", alpha=0.7)
+        plt.savefig(f"{self.output_hist_folder}/read_length_histogram_{START_POS_RANGE_FROM}_{START_POS_RANGE_TO}.svg")
+        plt.close()

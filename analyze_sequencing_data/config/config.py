@@ -88,7 +88,7 @@ def build_config():
         # graphs
         'output_graphs_folder': 'output/graphs/',
         'output_hist_folder': "output/graphs/hist/",
-        'len_reads_hist_output_file': "output/graphs/hist/hist_len_reads.png",
+        'len_reads_hist_output_file': "output/graphs/hist/hist_len_reads.svg",
         'output_line_graphs_folder': 'output/graphs/line_graphs/',
         'sampling_rate_from_good_reads_graph': 'output/graphs/line_graphs/sampling_rate_from_good_reads_graph',
         'output_heatmap_folder': 'output/graphs/heatmap/',
