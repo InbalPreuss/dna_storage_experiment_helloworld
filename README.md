@@ -37,10 +37,11 @@ This command reads the requirements.txt file and installs the listed packages an
 ### Step 3
 
 Important input files to have inorder to run the full main.py pipline:
-1. 'input_file': "data/sequencing_output_fastq/all_sequencing_output.fastq".
+1. 'input_file_or_folder': "data/sequencing_output_fastq/".
+   Inside the sequencing_output_fastq folder, there are guppy.fastq and guppy.fasta files.
    
    all_sequencing_output.fastq file contains all the sequences after combining all the sequencing output fastq files.  
-2. 'design_before_conversion_file': "data/raw_data/design/all_design_before_parse.fasta".
+2. 'design_before_conversion_file': "data/design/all_design_before_parse.fasta".
    
    all_design_before_parse.fasta file contains all the sequences after combining all the sequencing output fasta files. 
 3. 'const_design_file': "config/design.csv".
@@ -58,7 +59,7 @@ Make sure that the config files are with the correct locations in the sequence.
 ### Step 4
 Run pipline:
 ```
-cd dna_storage_helix_experiment\analyze_sequencing_data
+cd dna_storage_experiment_helloworld\analyze_sequencing_data
 import main
 python main.main()
 ```
